@@ -1,3 +1,3 @@
 # RISKChain
-<img src="https://www.google.com/url?sa=i&source=images&cd=&cad=rja&uact=8&ved=2ahUKEwjNmYSe1qDhAhWP_p8KHTg0D8AQjRx6BAgBEAU&url=https%3A%2F%2Flogos.fandom.com%2Fwiki%2FRisk&psig=AOvVaw0QNrHBQoIxDpgLxVZBlQwO&ust=1553719473824676">
+<img src="https://vignette.wikia.nocookie.net/logopedia/images/a/ad/Risk-Logo.png/revision/latest/scale-to-width-down/300?cb=20170219011928">
 Luke & Sean & some other kid we find
