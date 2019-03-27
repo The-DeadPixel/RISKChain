@@ -28,6 +28,8 @@ contract RISK {
         uint continent;
         uint region;
     }
+
+    uint seed; // seed that is pre-defined by the contract owner, used for random dice rolls
     
     mapping(address => Player) Players;
     mapping(uint => Continent) Continents;
@@ -49,7 +51,7 @@ contract RISK {
         return true;
     }
     
-    function Attack(uint numArmies, Location fromLoc, Location toLoc) internal returns(bool success) {
+    function Attack(uint numArmies, Location fromLoc, Location toLoc, uint seed) internal returns(bool success) {
         Region fromRegion = Continents[fromLoc.continent].Regions[fromLoc.region];
         Region toRegion = Continents[toLoc.continent].Regions[toLoc.region];
         Player player = Players[msg.sender];
