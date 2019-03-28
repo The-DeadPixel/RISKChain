@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import ReactDOM from 'react-dom';
 
 import path from '../resources/path.svg';
 
@@ -8,7 +9,8 @@ class Board extends Component {
         super(props);
         console.log(props);
         this.state = {
-            select: props.select
+            select: props.select,
+            outline: 'm0 0'
         }
 
         this.clickMap = this.clickMap.bind(this);
@@ -21,6 +23,29 @@ class Board extends Component {
         }
         this.state.select(event.target.id);
     }
+    componentDidMount() {
+        var countries = document.getElementsByClassName('country');
+
+        //console.log(countries);
+        for (var a=[], i=42; i;) a[--i] = countries[i];
+        a.map((e) => {
+            console.log(e.id);
+            ReactDOM.findDOMNode(this).addEventListener('mouseover', (mouseEvent) => {
+                var outline = mouseEvent.path[0].getAttribute('d');
+                console.log(mouseEvent.path[0].id);
+                this.setState({outline: outline}, () =>{this.render()});
+            }  );
+        });
+
+        var seas = document.getElementsByClassName('sea');
+        for (var seaArray=[], index=4;index;) seaArray[--index] = seas;
+        seaArray.map((each) => {
+           ReactDOM.findDOMNode(this).addEventListener('mouseover', (mouseEvent) =>{
+                this.setState({outline:'m0 0'}, () =>{this.render()});
+           })
+        });
+    }
+
     render() {
         //                <map:country name="East Africa" index="1" continent="africa" d="M532 514c-1,-6 -1,-12 -2,-17 5,-1 6,-8 7,-12 1,0 2,0 4,0 1,-8 11,-8 10,-19 -5,-1 -10,-2 -16,-2 0,-2 -1,-4 -2,-6 0,1 -1,2 -2,3 -7,-10 -12,-18 -16,-29 -1,-14 2,-24 4,-37 0,-1 0,-3 0,-4 1,0 2,0 4,0 -1,-3 -1,-3 1,-9 11,0 22,0 33,0 2,-3 2,-3 5,-4 7,11 9,26 14,38 1,1 2,1 3,1 2,5 3,9 5,14 -1,0 -2,0 -3,0 9,6 21,1 30,-1 0,0 0,1 1,2 -4,12 -9,23 -16,34 -15,12 -22,25 -33,39 0,7 0,14 1,21 -6,1 -11,2 -16,4 -2,6 -2,16 -2,18 -2,-1 -3,-1 -5,-1 0,-7 0,-15 0,-23 -2,-3 -5,-7 -7,-10 -1,0 -2,0 -2,0z"/>
         return (
@@ -92,7 +117,7 @@ class Board extends Component {
                     <path className='country' id="Venezuela" d="M219 423c0,0 1,-1 1,-1 -2,-1 -2,-1 -16,-6 -2,-6 -10,-6 -16,-10 1,-7 4,-13 5,-21 -1,0 -2,0 -3,-1 0,-3 1,-7 2,-10 1,0 2,0 3,0 0,-2 0,-4 0,-5 2,2 3,3 3,6 1,1 2,1 3,2 0,-2 -1,-4 -1,-6 4,-2 8,-5 12,-8 4,-2 7,-2 12,-5 2,0 3,0 5,-1 1,1 2,2 3,3 -1,1 -2,3 -4,4 1,2 2,3 3,5 0,-2 0,-2 0,-3 1,-1 1,-1 2,-1 0,-1 0,-2 0,-3 5,-1 8,0 13,2 10,0 18,-2 21,9 0,0 1,0 2,0 1,1 1,2 1,4 6,1 9,3 13,7 1,-1 2,-1 2,-2 5,3 16,7 19,9 -3,6 -9,16 -16,11 -6,5 -13,3 -20,4 -1,-6 -1,-6 -4,-13 -8,1 -9,3 -15,4 0,5 0,6 -3,9 -5,0 -7,1 -11,-2 -2,0 -5,1 -7,2 -1,7 4,11 0,18 -3,0 -5,0 -8,0 0,0 -1,-1 -1,-1z"/>
                 </g>
             </g>
-            <path id="hilite" fill="white" strokeWidth="8" stroke="black" opacity="0.3"/>
+            <path className='outline' id="hilite" fill="white" strokeWidth="8" stroke="black" opacity="0.3" d={this.state.outline}/>
         </svg>
 
     );
