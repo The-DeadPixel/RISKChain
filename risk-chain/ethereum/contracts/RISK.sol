@@ -169,7 +169,7 @@ contract RISK {
     // Helper Functions
 
     /* Generates a random number from 0 to 5 based on the last block hash */
-    function randomGen(uint seed) constant internal returns (uint randomNumber) {
+    function Rolldie(uint seed) constant internal returns (uint randomNumber) {
         return(uint(keccak256(block.blockhash(block.number-1), seed ))%5);
     }
         
