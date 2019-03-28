@@ -10,6 +10,7 @@ class Board extends Component {
         console.log(props);
         this.state = {
             select: props.select,
+            board: props.board,
             outline: 'm0 0'
         }
 
@@ -22,9 +23,7 @@ class Board extends Component {
             return;
         }
         this.state.select(event.target.id);
-        var obj = [[0,1], [3,2], [6,9]];
-        console.log(JSON.stringify(obj));
-        console.log(JSON.parse('[[0,1], [0,2], [0,3], [0,4], [0,5], [1,4]]'));
+
         var country = document.getElementById(event.target.id);
         this.setState( {outline: country.getAttribute('d')});
     }
@@ -46,7 +45,7 @@ class Board extends Component {
         var seas = document.getElementsByClassName('sea');
         for (var seaArray=[], index=4;index;) seaArray[--index] = seas;
         seaArray.map((each) => {
-           ReactDOM.findDOMNode(this).addEventListener('mouseover', (mouseEvent) =>{
+           ReactDOM.findDOMNode(this).addEventListener('mouseover', (mouseEvent) => {
                 //this.setState({outline:'m0 0'});
            })
         });

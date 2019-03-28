@@ -19,6 +19,7 @@ class App extends Component {
     this.selectFrom = this.selectFrom.bind(this);
     this.selectTo = this.selectTo.bind(this);
     this.render = this.render.bind(this);
+    this.getTestBoard = this.getTestBoard.bind(this);
   }
 
   selectCountry(country) {
@@ -42,8 +43,236 @@ class App extends Component {
     console.log('testTo');
     this.setState({type:true}, console.log.bind('selectTo'));
   }
+  getTestBoard(){
+    var player1 = '0xSEAN';
+    var player2 = '0xLUKE';
+    var player3 = '0xDAVE';
+    return {
+      board: {
+        0:{
+          0:{
+            owner: {player1},
+            troops: 5
+          },
+          1:{
+            owner: {player1},
+            troops: 4
+          },
+          2:{
+            owner: {player3},
+            troops: 4
+          },
+          3:{
+            owner: {player3},
+            troops: 4
+          },
+          4:{
+            owner: {player2},
+            troops: 4
+          },
+          5:{
+            owner: {player1},
+            troops: 4
+          }
+        },
+        1: {
+          0: {
+            owner: {player1},
+            troops: 5
+          },
+          1: {
+            owner: {player2},
+            troops: 4
+          },
+          2: {
+            owner: {player2},
+            troops: 4
+          },
+          3: {
+            owner: {player2},
+            troops: 4
+          },
+          4: {
+            owner: {player2},
+            troops: 4
+          },
+          5: {
+            owner: {player2},
+            troops: 4
+          },
+          6: {
+            owner: {player2},
+            troops: 4
+          },
+          7: {
+            owner: {player2},
+            troops: 4
+          },
+          8: {
+            owner: {player2},
+            troops: 4
+          },
+          9: {
+            owner: {player2},
+            troops: 4
+          },
+          10: {
+            owner: {player2},
+            troops: 4
+          },
+          11: {
+            owner: {player2},
+            troops: 4
+          }
+        },
+        2: {
+          0: {
+            owner: {player1},
+            troops: 5
+          },
+          1: {
+            owner: {player2},
+            troops: 4
+          },
+          2: {
+            owner: {player2},
+            troops: 4
+          },
+          3: {
+            owner: {player2},
+            troops: 4
+          }
+        },
+        3: {
+          0: {
+            owner: {player1},
+            troops: 5
+          },
+          1: {
+            owner: {player2},
+            troops: 4
+          },
+          2: {
+            owner: {player2},
+            troops: 4
+          },
+          3: {
+            owner: {player2},
+            troops: 4
+          },
+          4: {
+            owner: {player2},
+            troops: 4
+          },
+          5: {
+            owner: {player2},
+            troops: 4
+          },
+          6: {
+            owner: {player2},
+            troops: 4
+          }
+        },
+        4: {
+          0: {
+            owner: {player1},
+            troops: 5
+          },
+          1: {
+            owner: {player2},
+            troops: 4
+          },
+          2: {
+            owner: {player2},
+            troops: 4
+          },
+          3: {
+            owner: {player3},
+            troops: 5
+          },
+          4: {
+            owner: {player2},
+            troops: 4
+          },
+          5: {
+            owner: {player2},
+            troops: 4
+          },
+          6: {
+            owner: {player2},
+            troops: 4
+          },
+          7: {
+            owner: {player2},
+            troops: 4
+          },
+          8: {
+            owner: {player2},
+            troops: 4
+          }
+        },
+        5: {
+          0: {
+            owner: {player1},
+            troops: 5
+          },
+          1: {
+            owner: {player2},
+            troops: 4
+          },
+          2: {
+            owner: {player2},
+            troops: 4
+          },
+          3: {
+            owner: {player2},
+            troops: 4
+          }
+        }
+      },
+      config:{
+        turn: {player1},
+        phase: 0
 
+      },
+      card:{
+        hand: {
+          0:{
+            continent: 0,
+            country: 4,
+            type: 0
+          },
+          1:{
+            continent: 3,
+            country: 4,
+            type: 0
+          },
+          2:{
+            continent: 0,
+            country: 1,
+            type: 2
+          },
+          3:{
+            continent: 3,
+            country: 3,
+            type: 2
+          },
+          4:{
+            continent: 4,
+            country: 0,
+            type: 3
+          },
+          5:{
+            continent: 0,
+            country: 0,
+            type: 1
+          }
+        }
+      }
+    }
+  }
   render() {
+    //console.log(this.getTestBoard());
     return (
       <div className="App">
         <div>
@@ -57,12 +286,14 @@ class App extends Component {
         <div>
           <p> From: {this.state.from} To: {this.state.to}</p>
         </div>
-        <Board select={this.selectCountry}/>
+        <Board select={this.selectCountry} board={this.getTestBoard()}/>
 
       </div>
 
   );
   }
+
+
 }
 
 export default App;
