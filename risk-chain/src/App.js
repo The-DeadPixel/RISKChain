@@ -1,15 +1,34 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
 import Map from './components/Map';
+import Board from './components/Board';
+
 import './App.css';
 
 class App extends Component {
+  constructor(props) {
+    super(props);
+    this.state={
+      from: 'Test',
+      to: '',
+      troops:'',
+      phase: ''
+    };
+    this.selectCountry = this.selectCountry.bind(this);
+  }
+
+  selectCountry(country) {
+    console.log(country);
+    this.setState({from:country});
+  }
+
   render() {
     return (
       <div className="App">
-        <Map />
-      </div>
-    );
+        <Board select={this.selectCountry}/>
+        <p>{this.state.from}</p>
+       </div>
+
+  );
   }
 }
 
