@@ -17,11 +17,13 @@ class Board extends Component {
     }
     clickMap(event) {
         //console.log(event.target.id);
-        if (event.target.className.baseVal.localeCompare( 'country')) {
+        if (!event.target.className.baseVal.localeCompare( 'country') == 0) {
             console.log('Not Country');
             return;
         }
         this.state.select(event.target.id);
+        var country = document.getElementById(event.target.id);
+        this.setState( {outline: country.getAttribute('d')});
     }
     componentDidMount() {
         var countries = document.getElementsByClassName('country');
@@ -33,7 +35,7 @@ class Board extends Component {
             ReactDOM.findDOMNode(this).addEventListener('mouseover', (mouseEvent) => {
                 var outline = mouseEvent.path[0].getAttribute('d');
                 console.log(mouseEvent.path[0].id);
-                this.setState({outline: outline}, () =>{this.render()});
+
             }  );
         });
 
@@ -41,7 +43,7 @@ class Board extends Component {
         for (var seaArray=[], index=4;index;) seaArray[--index] = seas;
         seaArray.map((each) => {
            ReactDOM.findDOMNode(this).addEventListener('mouseover', (mouseEvent) =>{
-                this.setState({outline:'m0 0'}, () =>{this.render()});
+                //this.setState({outline:'m0 0'});
            })
         });
     }
