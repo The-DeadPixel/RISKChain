@@ -1,2 +1,2 @@
 $ cat .gitattributes
-*.sol linguist-language=Solidty
+*.sol linguist-language=Solidity
