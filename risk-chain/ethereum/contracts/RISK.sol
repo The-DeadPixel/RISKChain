@@ -167,17 +167,13 @@ contract RISK {
     }
 
     /* Given a Region and a Location, will check if the Location exists in the adjacancy map */
-    function isAdjacent(Region region, Location dest) internal view returns(bool adjacent) {
+    function isAdjacent(Region reg, uint dest) internal view returns(bool adjacent) {
         uint adjContinent = 0;
         uint adjRegion = 0;
-        for(uint i = 0; i < adjLength; ++i) {
-            adjContinent = region.adjRegions[i].continent;
-            adjRegion = region.adjRegions[i].region;
-            // Found null padding (Location(6,0)) at end of list
-            if(adjContinent == 6 && adjRegion == 0)
-                return false;
-            if(adjContinent == dest.continent && adjRegion == dest.region)
-                return true; // Location is in the region adjRegions List
+        for(uint i = 0; i < reg.adjLength; ++i) {
+            adjRegion = reg.adjRegions[i];
+            if(adjRegion == dest)
+                return true; // index is in the region adjRegions List
         }
         return false; // got through the whole list and did not find the dest Location
     }
