@@ -75,9 +75,9 @@ contract RISK {
         return true;
     }
 
-    function Attack(Location fromLoc, Location toLoc, uint numArmies, uint seed) internal returns(bool success) {
-        Region fromRegion = Continents[fromLoc.continent].Regions[fromLoc.region];
-        Region toRegion = Continents[toLoc.continent].Regions[toLoc.region];
+    function Attack(uint fromLoc, uint toLoc, uint numArmies, uint seed) internal returns(bool success) {
+        Region fromRegion = Regions[fromLoc];
+        Region toRegion = Regions[toLoc];
         Player attacker = Players[msg.sender];
         Player defender = Players[toRegion.owner];
 
