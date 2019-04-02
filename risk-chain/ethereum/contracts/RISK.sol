@@ -11,119 +11,73 @@ contract RISK {
         uint index;
         uint armyIncome;
     }
-    //TODO Need to find a different implimentation for Location, as solidity does not support structs that contain arrays of structs
     struct Continent {
         address owner;
         uint bonus;
-        Region[] Regions;
-    }
-    //TODO Need to find a different implimentation for Location, as solidity does not support structs that contain arrays of structs
-    struct Region {
-        address owner;
-        uint numArmies;
-        uint continent;
-        Location[] adjRegions;
+        uint[] Regions;
     }
 
-    //TODO Need to find a different implimentation for Location, as solidity does not support structs that contain arrays of structs
-    //tuple for finding a region within a continent struct
-    struct Location {
+    struct Region {
+        address owner;
+        uint index; // index of the regions map (useful for checking adjacencies)
+        uint numArmies;
         uint continent;
-        uint region;
+        uint adjLength;
+        uint[] adjRegions; //adjacencies that point to indexes of the Regions map
     }
 
     //TODO: MAKE TOKEN CONTRACT FOR RISK CARD DRAW PILE AND CARDS
-    struct card {
-        Location loc;
-        armyType val;
-    }
-
-    uint adjLength = 6;
 
     mapping(address => Player) Players;
     mapping(uint => Continent) Continents;
+    mapping(uint => Region) Regions;
     uint[] bonus = [3,7,2,5,5,2];
     uint[] numRegions = [6,12,4,7,9,4];
+    uint[] numAdjList = [6,4,3,2,3,5,5,4,4,5,6,5,3,6,2,5,4,3,2,3,3,4,4,3,5,4,5,6,4,3,4,3,4,4,4,5,4,3,2,4,3,3];
     uint[] atckDie; uint[] defDie; // for storing dice roll values
-    //TODO Need to find a different implimentation for Location, as solidity does not support structs that contain arrays of structs
-    Location[] adjList = [Location(0,1), Location(0,2), Location(0,3), Location(0,4), Location(0,5), Location(1,4),
-                        Location(0,0), Location(0,5), Location(1,4), Location(3,4), Location(6,0), Location(6,0),
-                        Location(0,0), Location(0,3), Location(0,4), Location(6,0), Location(6,0), Location(6,0),
-                        Location(0,0), Location(0,3), Location(6,0), Location(6,0), Location(6,0), Location(6,0),
-                        Location(0,0), Location(0,1), Location(0,2), Location(6,0), Location(6,0), Location(6,0),
-                        Location(0,0), Location(0,1), Location(0,2), Location(3,6), Location(5,1), Location(6,0),
-                        Location(1,1), Location(1,4), Location(1,7), Location(1,10), Location(3,5), Location(6,0),
-                        Location(1,0), Location(1,4), Location(1,7), Location(1,6), Location(6,0), Location(6,0),
-                        Location(1,3), Location(1,9), Location(1,11), Location(1,5), Location(6,0), Location(6,0),
-                        Location(1,2), Location(1,5), Location(1,8), Location(1,11), Location(4,0), Location(6,0),
-                        Location(1,0), Location(1,1), Location(0,0), Location(0,1), Location(3,4), Location(3,5),
-                        Location(1,2), Location(1,3), Location(1,7), Location(1,8), Location(1,9), Location(6,0),
-                        Location(1,1), Location(1,7), Location(2,3), Location(6,0), Location(6,0), Location(6,0),
-                        Location(1,0), Location(1,1), Location(1,5), Location(1,6), Location(1,9), Location(1,10),
-                        Location(1,3), Location(1,6), Location(6,0), Location(6,0), Location(6,0), Location(6,0),
-                        Location(1,2), Location(1,5), Location(1,7), Location(1,10), Location(1,11), Location(6,0),
-                        Location(1,0), Location(1,7), Location(1,9), Location(3,5), Location(6,0), Location(6,0),
-                        Location(1,2), Location(1,3), Location(1,9), Location(6,0), Location(6,0), Location(6,0),
-                        Location(2,1), Location(2,2), Location(6,0), Location(6,0), Location(6,0), Location(6,0),
-                        Location(2,0), Location(2,2), Location(2,3), Location(6,0), Location(6,0), Location(6,0),
-                        Location(2,0), Location(2,1), Location(2,3), Location(6,0), Location(6,0), Location(6,0),
-                        Location(2,1), Location(2,2), Location(1,6), Location(6,0), Location(6,0), Location(6,0),
-                        Location(3,1), Location(3,2), Location(3,3), Location(3,6), Location(6,0), Location(6,0),
-                        Location(3,0), Location(3,3), Location(4,3), Location(6,0), Location(6,0), Location(6,0),
-                        Location(3,0), Location(3,2), Location(3,3), Location(3,4), Location(3,5), Location(6,0),
-                        Location(3,0), Location(3,1), Location(3,2), Location(3,5), Location(6,0), Location(6,0),
-                        Location(3,2), Location(3,5), Location(3,6), Location(0,1), Location(1,4), Location(6,0),
-                        Location(3,2), Location(3,3), Location(3,4), Location(1,0), Location(1,4), Location(1,10),
-                        Location(3,0), Location(3,2), Location(3,4), Location(0,5), Location(6,0), Location(6,0),
-                        Location(4,5), Location(4,1), Location(1,3), Location(6,0), Location(6,0), Location(6,0),
-                        Location(4,0), Location(4,5), Location(4,6), Location(4,7), Location(6,0), Location(6,0),
-                        Location(4,3), Location(4,7), Location(5,3), Location(6,0), Location(6,0), Location(6,0),
-                        Location(4,2), Location(4,6), Location(4,7), Location(4,8), Location(6,0), Location(6,0),
-                        Location(4,5), Location(4,6), Location(4,8), Location(3,1), Location(6,0), Location(6,0),
-                        Location(4,0), Location(4,1), Location(4,4), Location(4,6), Location(6,0), Location(6,0),
-                        Location(4,1), Location(4,4), Location(4,5), Location(4,7), Location(4,8), Location(6,0),
-                        Location(4,1), Location(4,2), Location(4,3), Location(4,6), Location(6,0), Location(6,0),
-                        Location(4,3), Location(4,4), Location(4,6), Location(6,0), Location(6,0), Location(6,0),
-                        Location(5,1), Location(5,2), Location(6,0), Location(6,0), Location(6,0), Location(6,0),
-                        Location(5,0), Location(5,2), Location(5,3), Location(0,5), Location(6,0), Location(6,0),
-                        Location(5,0), Location(5,1), Location(5,3), Location(6,0), Location(6,0), Location(6,0),
-                        Location(5,1), Location(5,2), Location(4,2), Location(6,0), Location(6,0), Location(6,0)];
+    uint[] adjList = [1,2,3,4,5,10,0,5,10,26,0,3,4,0,3,0,1,2,0,1,2,28,39,7,10,13,16,27,6,10,13,12,9,15,17,11,8,11,14,17,29,6,7,0,1,26,
+    27,8,9,13,14,15,7,13,21,6,7,11,12,15,16,9,12,8,11,13,16,17,6,13,15,27,8,9,15,19,20,18,20,21,18,19,21,19,20,12,
+    23,24,25,28,22,25,32,22,24,25,26,27,22,23,24,27,24,27,28,1,10,24,25,26,6,10,16,22,24,26,5,34,30,9,29,34,35,36,
+    32,36,41,31,35,36,37,34,35,37,23,29,30,33,35,30,33,34,36,37,30,31,32,35,32,33,35,39,40,38,40,41,5,38,39,41,39,40,31];
 
     // Constructor
 
     function RISK() public {
         //TODO populate the Player map struct
-        for(uint i = 0; i <= 6; ++i) {
-            Region[] currReg;
-            for(uint j = 0; j < numRegions[i]; ++j) {
-                Location[] adjRegions;
-                for(uint k=0; k < adjLength; ++k)
-                    adjRegions[k] = adjList[k+(j*6)];
-                currReg[i] = Region(0,0,i,adjRegions);
+        uint totalOffset = 0;
+        uint adjOffset = 0;
+        for(uint i=0; i<= 6; ++i) {
+            uint[] currRegInds;
+            for(uint j=0; j < numRegions[i]; ++j) {
+                uint[] currAdjInds;
+                currRegInds[j] = j+totalOffset; // totalOffset is the offset of the Regions map
+                for(uint k=0; k < numAdjList[j+totalOffset]; ++k) {
+                    currRegInds[k] = adjList[k+adjOffset];
+                    adjOffset += 1; // cause Fuck it
+                }
+                Regions[j+totalOffset] = Region(0,j+totalOffset,0,i,numAdjList[j+totalOffset],currAdjInds);
             }
-            Continents[i] = Continent(0,bonus[i],currReg);
+            totalOffset += numRegions[i]; // Increase the offset
+            Continents[i] = Continent(0,bonus[i],currRegInds);
         }
     }
 
     // Functions
 
-    function PlaceTroops(uint newArmies, Location loc) internal returns(bool success) {
-        Region region = Continents[loc.continent].Regions[loc.region];
-        Player player = Players[msg.sender];
-
+    function PlaceTroops(uint newArmies, uint loc) internal returns(bool success) {
         // Needs to have a require for checking correct turn phase
-        require(region.owner == msg.sender, "You do not own this region");
+        require(Regions[loc].owner == msg.sender, "You do not own this region");
         require(newArmies > 0, "Must choose amount of armies to place");
-        require(player.armyIncome >= newArmies, "Not enough army surplus remaining to place these armies");
+        require(Players[msg.sender].armyIncome >= newArmies, "Not enough army surplus remaining to place these armies");
 
-        player.armyIncome -= newArmies;
-        region.numArmies += newArmies;
+        Players[msg.sender].armyIncome -= newArmies;
+        Regions[loc].numArmies += newArmies;
         return true;
     }
 
-    function Attack(Location fromLoc, Location toLoc, uint numArmies, uint seed) internal returns(bool success) {
-        Region fromRegion = Continents[fromLoc.continent].Regions[fromLoc.region];
-        Region toRegion = Continents[toLoc.continent].Regions[toLoc.region];
+    function Attack(uint fromLoc, uint toLoc, uint numArmies, uint seed) internal returns(bool success) {
+        Region fromRegion = Regions[fromLoc];
+        Region toRegion = Regions[toLoc];
         Player attacker = Players[msg.sender];
         Player defender = Players[toRegion.owner];
 
@@ -189,9 +143,9 @@ contract RISK {
         return true;
     }
 
-    function TrfTroops(uint numArmies, Location fromLoc, Location toLoc) internal returns(bool success) {
-        Region fromRegion = Continents[fromLoc.continent].Regions[fromLoc.region];
-        Region toRegion = Continents[toLoc.continent].Regions[toLoc.region];
+    function TrfTroops(uint numArmies, uint fromLoc, uint toLoc) internal returns(bool success) {
+        Region fromRegion = Regions[fromLoc];
+        Region toRegion = Regions[toLoc];
         Player player = Players[msg.sender];
 
         // Needs to have a require for checking correct turn phase
@@ -213,17 +167,13 @@ contract RISK {
     }
 
     /* Given a Region and a Location, will check if the Location exists in the adjacancy map */
-    function isAdjacent(Region region, Location dest) internal view returns(bool adjacent) {
+    function isAdjacent(Region reg, uint dest) internal view returns(bool adjacent) {
         uint adjContinent = 0;
         uint adjRegion = 0;
-        for(uint i = 0; i < adjLength; ++i) {
-            adjContinent = region.adjRegions[i].continent;
-            adjRegion = region.adjRegions[i].region;
-            // Found null padding (Location(6,0)) at end of list
-            if(adjContinent == 6 && adjRegion == 0)
-                return false;
-            if(adjContinent == dest.continent && adjRegion == dest.region)
-                return true; // Location is in the region adjRegions List
+        for(uint i = 0; i < reg.adjLength; ++i) {
+            adjRegion = reg.adjRegions[i];
+            if(adjRegion == dest)
+                return true; // index is in the region adjRegions List
         }
         return false; // got through the whole list and did not find the dest Location
     }
