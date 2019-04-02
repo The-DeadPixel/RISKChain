@@ -143,9 +143,9 @@ contract RISK {
         return true;
     }
 
-    function TrfTroops(uint numArmies, Location fromLoc, Location toLoc) internal returns(bool success) {
-        Region fromRegion = Continents[fromLoc.continent].Regions[fromLoc.region];
-        Region toRegion = Continents[toLoc.continent].Regions[toLoc.region];
+    function TrfTroops(uint numArmies, uint fromLoc, uint toLoc) internal returns(bool success) {
+        Region fromRegion = Regions[fromLoc];
+        Region toRegion = Regions[toLoc];
         Player player = Players[msg.sender];
 
         // Needs to have a require for checking correct turn phase
