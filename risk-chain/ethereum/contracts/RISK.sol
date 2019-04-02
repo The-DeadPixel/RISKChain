@@ -64,17 +64,14 @@ contract RISK {
 
     // Functions
 
-    function PlaceTroops(uint newArmies, Location loc) internal returns(bool success) {
-        Region region = Continents[loc.continent].Regions[loc.region];
-        Player player = Players[msg.sender];
-
+    function PlaceTroops(uint newArmies, uint loc) internal returns(bool success) {
         // Needs to have a require for checking correct turn phase
-        require(region.owner == msg.sender, "You do not own this region");
+        require(Regions[loc].owner == msg.sender, "You do not own this region");
         require(newArmies > 0, "Must choose amount of armies to place");
-        require(player.armyIncome >= newArmies, "Not enough army surplus remaining to place these armies");
+        require(Players[msg.sender].armyIncome >= newArmies, "Not enough army surplus remaining to place these armies");
 
-        player.armyIncome -= newArmies;
-        region.numArmies += newArmies;
+        Players[msg.sender].armyIncome -= newArmies;
+        Regions[loc].numArmies += newArmies;
         return true;
     }
 
