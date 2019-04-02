@@ -59,6 +59,17 @@ class Board extends Component {
             this.state.makeSelections(lines);
             this.setState( {selections: lines});
         }
+        var hilites = document.getElementsByClassName('outlines');
+        for(var outLineArray=[], index = hilites.length; index;) outLineArray[--index] = hilites[i];
+        console.log('outline array');
+        console.log(hilites.length);
+        console.log(hilites);
+        outLineArray.map((e)=>{
+            console.log(e);
+            ReactDOM.findDOMNode(e).addEventListener('mouseover', console.log.bind('over'));
+            ReactDOM.findDOMNode(e).addEventListener('mouseleave', console.log.bind('leave'));
+
+        });
 
 
     }
@@ -82,7 +93,7 @@ class Board extends Component {
                 //console.log((continents[cont].getElementsByClassName('country')));
                 if(this.state.board.board[cont][country].owner.localeCompare(player) === 0){
                     //console.log(this.state.board.board[cont][country]);
-                    linePath.push( (<path className='outline' key={'('+cont+','+country+')'} id="hilite" fill={color} strokeWidth="8" stroke="black" opacity="0.3" d={continents[cont].getElementsByClassName('country')[country].getAttribute('d')}/>) );
+                    linePath.push( (<path className='outlines' key={'('+cont+','+country+')'} id="hilite" fill={color} strokeWidth="8" stroke="black" opacity="0.3" d={continents[cont].getElementsByClassName('country')[country].getAttribute('d')}/>) );
                     //console.log((<path className='outline' key={'('+cont+','+country+')'}  id="hilite" fill={color} strokeWidth="8" stroke="black" opacity="0.3" d={continents[cont].getElementsByClassName('country')[country].getAttribute('d')}/>));
                 }
 
