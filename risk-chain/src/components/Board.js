@@ -89,9 +89,11 @@ class Board extends Component {
             for(var country in keys) {
                 //console.log((continents[cont].getElementsByClassName('country')));
                 if(this.state.board.board[cont][country].owner.localeCompare(player) === 0){
-                    console.log(this.state.board.board[cont][country]);
+                    let loc = continents[cont].getElementsByClassName('country')[country].getBBox();
+                    console.log(loc);
                     linePath.push( (<path className='outlines' data={continents[cont].getElementsByClassName('country')[country].getAttribute('id')} key={'('+cont+','+country+')'} id="hilite" fill={color} strokeWidth="8" stroke="black" opacity="0.5" d={continents[cont].getElementsByClassName('country')[country].getAttribute('d')}/>) );
                     //console.log((<path className='outline' key={'('+cont+','+country+')'}  id="hilite" fill={color} strokeWidth="8" stroke="black" opacity="0.3" d={continents[cont].getElementsByClassName('country')[country].getAttribute('d')}/>));
+                    linePath.push( <svg><text x={loc.x} y={loc.y} >{this.state.board.board[cont][country].troops}</text></svg>)
                 }
 
             }
@@ -174,7 +176,6 @@ class Board extends Component {
             </g>
             {this.state.selections}
             <path className='outline' id="hilite" fill="white" strokeWidth="8" stroke="black" opacity="0.5" d={this.state.outline}/>
-
         </svg>
 
     );
