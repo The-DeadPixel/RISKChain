@@ -14,12 +14,14 @@ class App extends Component {
       type: false,
       troops:'',
       phase: '',
+      hilite: ''
     };
     this.selectCountry = this.selectCountry.bind(this);
     this.selectFrom = this.selectFrom.bind(this);
     this.selectTo = this.selectTo.bind(this);
     this.render = this.render.bind(this);
     this.getTestBoard = this.getTestBoard.bind(this);
+    this.makeSelect = this.makeSelect.bind(this);
   }
 
   selectCountry(country) {
@@ -43,6 +45,10 @@ class App extends Component {
     console.log('testTo');
     this.setState({type:true}, console.log.bind('selectTo'));
   }
+  makeSelect(lines) {
+    console.log('making selection of hilites');
+    this.setState({ hilite: lines }, this.render);
+  }
   getTestBoard(){
     var player1 = '0xSEAN';
     var player2 = '0xLUKE';
@@ -51,187 +57,187 @@ class App extends Component {
       board: {
         0:{
           0:{
-            owner: {player1},
+            owner: player1,
             troops: 5
           },
           1:{
-            owner: {player1},
+            owner: player1,
             troops: 4
           },
           2:{
-            owner: {player3},
+            owner: player3,
             troops: 4
           },
           3:{
-            owner: {player3},
+            owner: player3,
             troops: 4
           },
           4:{
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           5:{
-            owner: {player1},
+            owner: player1,
             troops: 4
           }
         },
         1: {
           0: {
-            owner: {player1},
+            owner: player1,
             troops: 5
           },
           1: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           2: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           3: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           4: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           5: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           6: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           7: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           8: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           9: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           10: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           11: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           }
         },
         2: {
           0: {
-            owner: {player1},
+            owner: player1,
             troops: 5
           },
           1: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           2: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           3: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           }
         },
         3: {
           0: {
-            owner: {player1},
+            owner: player1,
             troops: 5
           },
           1: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           2: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           3: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           4: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           5: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           6: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           }
         },
         4: {
           0: {
-            owner: {player1},
+            owner: player1,
             troops: 5
           },
           1: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           2: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           3: {
-            owner: {player3},
+            owner: player3,
             troops: 5
           },
           4: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           5: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           6: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           7: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           8: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           }
         },
         5: {
           0: {
-            owner: {player1},
+            owner: player1,
             troops: 5
           },
           1: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           2: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           },
           3: {
-            owner: {player2},
+            owner: player2,
             troops: 4
           }
         }
       },
       config:{
-        turn: {player1},
+        turn: player1,
         phase: 0
 
       },
@@ -272,7 +278,7 @@ class App extends Component {
     }
   }
   render() {
-    //console.log(this.getTestBoard());
+    console.log(this.state.hilite);
     return (
       <div className="App">
         <div>
@@ -286,7 +292,7 @@ class App extends Component {
         <div>
           <p> From: {this.state.from} To: {this.state.to}</p>
         </div>
-        <Board select={this.selectCountry} board={this.getTestBoard()}/>
+        <Board select={this.selectCountry} board={this.getTestBoard()} makeSelect={this.makeSelect} selections={this.state.hilite} />
 
       </div>
 
