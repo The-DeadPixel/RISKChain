@@ -44,15 +44,21 @@ contract RISK {
 
     function RISK() public {
         //TODO populate the Player map struct
-        for(uint i = 0; i <= 6; ++i) {
-            Region[] currReg;
-            for(uint j = 0; j < numRegions[i]; ++j) {
-                Location[] adjRegions;
-                for(uint k=0; k < adjLength; ++k)
-                    adjRegions[k] = adjList[k+(j*6)];
-                currReg[i] = Region(0,0,i,adjRegions);
+        uint totalOffset = 0;
+        uint adjOffset = 0;
+        for(uint i=0; i<= 6; ++i) {
+            uint[] currRegInds;
+            for(uint j=0; j < numRegions[i]; ++j) {
+                uint[] currAdjInds;
+                currRegInds[j] = j+totalOffset; // totalOffset is the offset of the Regions map
+                for(uint k=0; k < numAdjList[j+totalOffset]; ++k) {
+                    currRegInds[k] = adjList[k+adjOffset];
+                    adjOffset += 1; // cause Fuck it
+                }
+                Regions[j+totalOffset] = Region(0,j+totalOffset,0,i,numAdjList[j+totalOffset],currAdjInds);
             }
-            Continents[i] = Continent(0,bonus[i],currReg);
+            totalOffset += numRegions[i]; // Increase the offset
+            Continents[i] = Continent(0,bonus[i],currRegInds);
         }
     }
 
