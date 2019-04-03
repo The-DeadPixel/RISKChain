@@ -28,17 +28,16 @@ class App extends Component {
     console.log(country);
     if(!this.state.type){
       this.setState({from:country}, () => {
-        console.log(this.state);
+        console.log('from country state CB:', this.state);
       });
     }else{
       this.setState({to:country}, () => {
-        console.log(this.state);
+        console.log('to country state CB:',this.state);
       })
     }
    }
   selectFrom(){
     console.log('testFrom');
-
     this.setState({type:false}, console.log.bind('selectFrom'));
   }
   selectTo(){
@@ -238,7 +237,8 @@ class App extends Component {
       },
       config:{
         turn: player1,
-        phase: 0
+        phase: 0,
+        opponents: [player2, player3]
 
       },
       card:{
@@ -278,7 +278,7 @@ class App extends Component {
     }
   }
   render() {
-    console.log(this.state.hilite);
+    //console.log(this.state.hilite);
     return (
       <div className="App">
         <div>
