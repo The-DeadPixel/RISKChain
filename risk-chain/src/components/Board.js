@@ -93,7 +93,7 @@ class Board extends Component {
                     console.log(loc);
                     linePath.push( (<path className='outlines' data={continents[cont].getElementsByClassName('country')[country].getAttribute('id')} key={'('+cont+','+country+')'} id="hilite" fill={color} strokeWidth="8" stroke="black" opacity="0.5" d={continents[cont].getElementsByClassName('country')[country].getAttribute('d')}/>) );
                     //console.log((<path className='outline' key={'('+cont+','+country+')'}  id="hilite" fill={color} strokeWidth="8" stroke="black" opacity="0.3" d={continents[cont].getElementsByClassName('country')[country].getAttribute('d')}/>));
-                    linePath.push( <svg><text x={loc.x} y={loc.y} >{this.state.board.board[cont][country].troops}</text></svg>)
+                    linePath.push( <svg><text font-weight={'1000'} x={loc.x+(loc.width/2)} y={loc.y+(loc.height/2)} fill={'black'} key={'('+cont+','+country+'):'+this.state.board.board[cont][country].troops} >{this.state.board.board[cont][country].troops}</text></svg>)
                 }
 
             }
@@ -175,7 +175,7 @@ class Board extends Component {
                 </g>
             </g>
             {this.state.selections}
-            <path className='outline' id="hilite" fill="white" strokeWidth="8" stroke="black" opacity="0.5" d={this.state.outline}/>
+            <path className='outline' id="hilite" fill="white" strokeWidth="8" stroke="yellow" opacity="0.5" d={this.state.outline}/>
         </svg>
 
     );
