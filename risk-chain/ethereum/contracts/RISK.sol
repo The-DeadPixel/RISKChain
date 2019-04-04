@@ -304,13 +304,17 @@ contract RISK {
     }
 
     // Public View Functions
-
     function getBoard() public view returns (string boardState) { // NOTE: use s =  string(abi.encodePacked("", "", "", "", "")); to concat the strings
-        string memory finalOut = "";
-        for(uint i=0; i <= 6 ;++i) {
+        boardState = "";
+        string memory varPlayer = "var player";
+        for(uint i=0; i<PlayerAddrs.length; i++) {
+            // string memory num = string(bytes(i+1));
+            boardState = string(abi.encodePacked(boardState,varPlayer,num," = '",string(PlayerAddrs[i])));
+        }
+        for(uint j=0; j<=6 ;++j) {
             string memory round = "";
             //TODO FINISH THE view function
-            for(uint j=0; j < numRegions[i]; ++j) {
+            for(uint k=0; k<numRegions[j]; ++k) {
 
             }
         }
