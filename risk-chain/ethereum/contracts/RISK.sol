@@ -70,12 +70,11 @@ contract RISK {
     *   precondition: the length of newArmies must be the length of locations
     *   precondition: the player must be in the Placing status to place troops.
     **/
-    function PlaceTroopsDriver(uint[] Locations, uint[] newArmies) public returns(bool success) {
+    function PlaceTroopsDriver(uint[] input) public returns(bool success) {
         success = false; // Only return true if the function has finished
-        assert(newArmies.length == Locations.length);
         require(Players[msg.sender].status == Status.Placing, "You can't place armies right now!");
-        for(uint i=0; i < newArmies.length; ++i) {
-            if(!PlaceTroops(Locations[i], newArmies[i]))
+        for(uint i=0; i < input.length; i+=2) {
+            if(!PlaceTroops(input[i], input[i+1]))
                 return false;
         }
         Players[msg.sender].status = Status.Attacking;
@@ -91,8 +90,6 @@ contract RISK {
         require(Players[msg.sender].status == Status.Attacking, "You can't attack right now!");
         for(uint i=0; i < input.length; i+=3) {
             Attack(input[i], input[i+1], input[i+2], seed);
-            // if(!Attack(input[i], input[i+1], input[i+2], seed))
-            //     return false;
         }
         Players[msg.sender].status = Status.Transferring;
         return true;
@@ -130,34 +127,28 @@ contract RISK {
 
     function Attack(uint fromLoc, uint toLoc, uint numArmies, uint seed) internal returns(bool success) {
         success = false; // Only return true if the function has finished
-        Region fromRegion = Regions[fromLoc];
-        Region toRegion = Regions[toLoc];
-        Player attacker = Players[msg.sender];
-        Player defender = Players[toRegion.owner];
 
-        require(fromRegion.owner == msg.sender, "You can't attack from that region, you do not own it.");
-        require(toRegion.owner != msg.sender, "Can only transfer troops during the transfer phase.");
-        require(isAdjacent(fromRegion, toLoc), "You must attack regions that are adjacent.");
-        require(fromRegion.numArmies >= numArmies , "Trying to attack with more armies that are in the region."); //TODO: make that error message better.
-        require(fromRegion.numArmies - numArmies > 1, "One army must remain in the region attacking from.");
+        require(Regions[fromLoc].owner == msg.sender, "You can't attack from that region, you do not own it.");
+        require(Regions[toLoc].owner != msg.sender, "Can only transfer troops during the transfer phase.");
+        require(isAdjacent(Regions[fromLoc], toLoc), "You must attack regions that are adjacent.");
+        require(Regions[fromLoc].numArmies >= numArmies , "Trying to attack with more armies that are in the region."); //TODO: make that error message better.
+        require(Regions[fromLoc].numArmies - numArmies > 1, "One army must remain in the region attacking from.");
 
-        fromRegion.numArmies -= numArmies; // the armies are moved to attack
-        uint atckArmy = numArmies;
-        uint defArmy = toRegion.numArmies;
+        Regions[fromLoc].numArmies -= numArmies; // the armies are moved to attack
         uint atckDice; uint defDice;
         uint atckLosses; uint defLosses;
         bool attackerWins = false;
 
-        while(atckArmy > 0 && defArmy > 0) {
+        while(numArmies > 0 && Regions[toLoc].numArmies > 0) {
             /* Assign dice to the attacker and defender */
             // max 3 attacker die
-            if(atckArmy >= 3)
+            if(numArmies >= 3)
                 atckDice = 3;
-            else if(atckArmy == 2)
+            else if(numArmies == 2)
                 atckDice = 2;
             else atckDice = 1;
             // max 2 defender die
-            if(defArmy >= 2)
+            if(Regions[toLoc].numArmies >= 2)
                 defDice = 2;
             else defDice = 1;
 
@@ -177,22 +168,22 @@ contract RISK {
                 (atckLosses, defLosses) = EvenCompare(atckDice, defDice);
             else
                 (atckLosses, defLosses) = defFavoredCompare();
-            atckArmy -= atckLosses;
-            defArmy -= defLosses;
+            numArmies -= atckLosses;
+            Regions[toLoc].numArmies -= defLosses;
 
             /* Finally check if the Defender army is depleted, if so then the attacker wins*/
-            if(defArmy == 0)
+            if(Regions[toLoc].numArmies == 0)
                 attackerWins = true;
         }
         if(attackerWins) {
             //TODO impliment checking if defender is still alive and update it appropriatly
-            toRegion.numArmies = atckArmy; // remaining attacker armies are transfered to the toRegion
-            toRegion.owner = msg.sender; // ownership is transfered to the attacker
+            Regions[toLoc].numArmies = numArmies; // remaining attacker armies are transfered to the toRegion
+            Regions[toLoc].owner = msg.sender; // ownership is transfered to the attacker
         }
         // defender wins
         else {
-            toRegion.numArmies = defArmy; // remaining defender's armies
-            fromRegion.numArmies += atckArmy; // if the attacker stops attacking then the armies are transfered back, else will transfer 0 since all armies are gone.
+            Regions[toLoc].numArmies = Regions[toLoc].numArmies; // remaining defender's armies
+            Regions[fromLoc].numArmies += numArmies; // if the attacker stops attacking then the armies are transfered back, else will transfer 0 since all armies are gone.
         }
         return true;
     }
