@@ -4,6 +4,7 @@ import Board from './components/Board';
 
 import './App.css';
 import Controller from "./components/Controller";
+import Preview from "./components/Preview";
 
 class App extends Component {
   constructor(props) {
@@ -12,9 +13,13 @@ class App extends Component {
       from: 'Select a Country',
       to: 'Select a Country',
       type: false,
-      troops:'',
+      troops:0,
       phase: 0,
-      hilite: ''
+      hilite: '',
+      troopSelection: 'Selected Troops',
+      pendingMove: [],
+      setFromPreview: console.log,
+      setToPreview: console.log
     };
     this.selectCountry = this.selectCountry.bind(this);
     this.selectFrom = this.selectFrom.bind(this);
@@ -25,22 +30,31 @@ class App extends Component {
     this.getSubmitButton = this.getSubmitButton.bind(this);
     this.nextPhase = this.nextPhase.bind(this);
     this.getControllTitle = this.getControllTitle.bind(this);
+    this.sliderUpdate = this.sliderUpdate.bind(this);
+    this.addButton = this.addButton.bind(this);
+    this.getPreview = this.getPreview.bind(this);
+    this.registerFrom = this.registerFrom.bind(this);
+    this.registerTo = this.registerTo.bind(this);
+    this.getScrollBox = this.getScrollBox.bind(this);
   }
 
-  selectCountry(country) {
-    console.log(country);
+  selectCountry(selection) {
+    let country = selection.country;
+    console.log(selection);
     if(!this.state.type){
-      this.setState({from:country}, () => {
+      this.state.setFromPreview(country, 'PATH');
+      this.setState({from:country, troops:selection.troops, type: this.state.phase !==0 ? !this.state.type: this.state.type }, () => {
         console.log('from country state CB:', this.state);
       });
     }else{
-      this.setState({to:country}, () => {
+      this.state.setToPreview(country, 'PATH');
+      this.setState({to:country, type: !this.state.type }, () => {
         console.log('to country state CB:',this.state);
-      })
+      });
     }
    }
   selectFrom(){
-    console.log('testFrom');
+    console.log('testFrom.');
     this.setState({type:false}, console.log.bind('selectFrom'));
   }
   selectTo(){
@@ -239,9 +253,9 @@ class App extends Component {
         }
       },
       config:{
-        turn: player2,
+        turn: player1,
         phase: 0,
-        opponents: [player1, player3]
+        opponents: [player2, player3]
 
       },
       card:{
@@ -281,13 +295,69 @@ class App extends Component {
     }
   }
   nextPhase(){
-    this.setState({ phase: (this.state.phase+1)%3 });
+    //Send Data...
+    this.setState({ phase: (this.state.phase+1)%3 , pendingMove: []});
   }
   getControllTitle(){
     return (this.state.phase === 0 ? 'Placement Phase' : ( this.state.phase ===1 ? 'Attack Phase': 'Movement Phase' ) );
   }
   getSubmitButton(){
     return (<button onClick={(this.state.phase === 0 ? this.nextPhase : ( this.state.phase ===1 ? this.nextPhase: this.nextPhase ) )} > {(this.state.phase === 0 ? 'Deploy' : ( this.state.phase ===1 ? 'Launch Attack': 'Move Reinforcements' ) )}</button>);
+  }
+  sliderUpdate(event) {
+    console.log(event.target.value);
+    this.setState({ troopSelection: event.target.value });
+  }
+  addButton() {
+    // add From, To, Troops to list, based on phase.
+    if(this.state.troopSelection.localeCompare('Selected Troops')===0 || this.state.troopSelection <= 0){
+      console.log('No troops selected yet');
+    }
+
+    let update = {};
+    let tmpMoves = this.state.pendingMove;
+    console.log(tmpMoves);
+    if(this.state.phase == 0) {
+       update =  tmpMoves.push({ type: this.state.phase, country: this.state.from, troops: this.state.troopSelection});
+    } else {
+      update =  tmpMoves.push({ type: this.state.phase, from: this.state.from, to: this.state.to, troops: this.state.troopSelection });
+    }
+    console.log(update);
+    this.setState({ pendingMove: tmpMoves }, () => {console.log(this.state)});
+  }
+  registerFrom(func) {
+    this.setState({ setFromPreview: func});
+  }
+  registerTo(func) {
+    this.setState({ setToPreview: func});
+  }
+  getPreview() {
+    if(this.state.phase === 0 ){
+      return (<Preview name={this.state.from} type={'From'} register={this.registerFrom}/>);
+    }
+    return (<div>
+        <Preview name={this.state.from} type={'From'} register={this.registerFrom} />
+        <Preview name={this.state.to} type={'To'} register={this.registerTo} />
+        </div>
+  );
+  }
+  getScrollBox() {
+    let boxTag;
+
+    this.state.pendingMove.forEach((element) => {
+      if(element.type == 0){
+        boxTag +=  element.country +' + '+ element.troops+'\n';
+
+      }else{
+        boxTag += element.from +' '+ element.troops+' -> '+element.to+'\n';
+
+      }
+    });
+
+    boxTag = (<p className={'scrollBox'}> {boxTag} </p>);
+    //console.log(boxTag);
+    return boxTag;
+
   }
   render() {
     //console.log(this.state.hilite);
@@ -300,13 +370,18 @@ class App extends Component {
               {this.getControllTitle()}
             </tr>
             <tr>
-              <input type={'range'}/>
+              {this.getPreview()}
             </tr>
             <tr>
-              <button onClick={console.log}>Add</button>
+              <p>0</p>
+              <input type={'range'} min={'0'} max={this.state.troops-1} onChange={this.sliderUpdate}/>
+              <p>{this.state.troops -1}</p>
             </tr>
             <tr>
-              <p className={'scrollBox'}> Here is where we can put a list of all of the attacks Here is where we can put a list of all of the attacks Here is where we can put a list of all of the attacks Here is where we can put a list of all of the attacks</p>
+              <button onClick={this.addButton}>Add {this.state.troopSelection}</button>
+            </tr>
+            <tr className={'display-linebreak'}>
+              {this.getScrollBox()}
               </tr>
             <tr>
               {this.getSubmitButton()}

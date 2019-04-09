@@ -33,8 +33,15 @@ class Board extends Component {
         }else{
             country = event.target.id;
         }
-        console.log(country);
-        this.state.select(country);
+        let tmp = event.target.id.substr(1);
+        tmp = tmp.substr(0,tmp.length-1).split(',');
+        //console.log(this.state.board.board[tmp[0]][tmp[1]]);
+        var selection = {
+            country: country,
+            owner: this.state.board.board[tmp[0]][tmp[1]].owner,
+            troops: this.state.board.board[tmp[0]][tmp[1]].troops
+        };
+        this.state.select(selection);
 
         var country = document.getElementById(country);
         this.setState( {outline: country.getAttribute('d')});
@@ -99,7 +106,7 @@ class Board extends Component {
                 if(this.state.board.board[cont][country].owner.localeCompare(player) === 0){
                     let loc = continents[cont].getElementsByClassName('country')[country].getBBox();
                     //console.log(loc);
-                    linePath.push( (<path className='outlines' data={continents[cont].getElementsByClassName('country')[country].getAttribute('id')} key={'('+cont+','+country+')'} id="hilite" fill={color} strokeWidth="8" stroke="black" opacity="0.5" d={continents[cont].getElementsByClassName('country')[country].getAttribute('d')}/>) );
+                    linePath.push( (<path className='outlines' data={continents[cont].getElementsByClassName('country')[country].getAttribute('id')} id={'('+cont+','+country+')'} key="hilite" fill={color} strokeWidth="8" stroke="black" opacity="0.5" d={continents[cont].getElementsByClassName('country')[country].getAttribute('d')}/>) );
                     //console.log((<path className='outline' key={'('+cont+','+country+')'}  id="hilite" fill={color} strokeWidth="8" stroke="black" opacity="0.3" d={continents[cont].getElementsByClassName('country')[country].getAttribute('d')}/>));
                     linePath.push( <svg><text fontWeight={'1000'} x={loc.x+(loc.width/2)} y={loc.y+(loc.height/2)} fill={'black'} key={'('+cont+','+country+'):'+this.state.board.board[cont][country].troops} >{this.state.board.board[cont][country].troops}</text></svg>)
                 }
