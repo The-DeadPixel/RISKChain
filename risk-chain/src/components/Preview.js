@@ -25,7 +25,7 @@ class Preview extends Component {
         console.log(result);
     }
     chooseCountryForPreview(name, path) {
-        this.setState({ name: name, path: path })
+        this.setState({ name: name, path:  document.getElementById(name).getAttribute('d') })
     }
 
 
