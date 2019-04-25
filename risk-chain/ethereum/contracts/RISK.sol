@@ -37,7 +37,7 @@ contract RISK {
     mapping(address => Player) Players;
     mapping(uint => Continent) Continents;
     mapping(uint => Region) Regions;
-    mapping(uint => Card) DrawPile;
+    Card[] DrawPile;
     address[] PlayerAddrs;
     uint[] bonus = [3,7,2,5,5,2];
     uint[] numRegions = [6,12,4,7,9,4];
@@ -64,11 +64,14 @@ contract RISK {
                     adjOffset += 1; // cause Fuck it
                 }
                 Regions[j+totalOffset] = Region(0,j+totalOffset,0,i,numAdjList[j+totalOffset],currAdjInds);
+                // Initialize the region's card and add it to the draw pile (list)
+                DrawPile[j+totalOffset] = Card(j+totalOffset,i,ArmyType(j+totalOffset%4));
             }
             totalOffset += numRegions[i]; // Increase the offset
             Continents[i] = Continent(0,bonus[i],currRegInds);
         }
         //TODO populate the card draw map struct
+        // there are 42 cards, one for each region
     }
 
     // Public Phase Functions
@@ -343,33 +346,10 @@ contract RISK {
             handJSON = string(abi.encodePacked(handJSON,i,":{"));
             handJSON = string(abi.encodePacked(handJSON,"continent: ", currCard.continent, ", "));
             handJSON = string(abi.encodePacked(handJSON,"country: ", currCard.region, ", "));
-            handJSON = string(abi.encodePacked(handJSON,"type: ", getArmyTypeIntValue(currCard.type), "}"));
+            handJSON = string(abi.encodePacked(handJSON,"type: ", uint(currCard.type), "}"));
             if(i+1 < PlayerAddrs.length)
                 handJSON = string(abi.encodePacked(handJSON, ", "));
         }
-    }
-
-    function getStatusIntValue(address player) internal view returns(uint value) {
-        Status currStatus = Players[player].status;
-        if(currStatus == Status.Waiting)
-            return 0;
-        else if(currStatus == Status.Placing)
-            return 1;
-        else if(currStatus == Status.Attacking)
-            return 2;
-        else // status is ded
-            return 3;
-    }
-
-    function getArmyTypeIntValue(ArmyType type) internal view returns(uint value) {
-        if(type == ArmyType.Solider)
-            return 0;
-        else if(type == ArmyType.Horse)
-            return 1;
-        else if(type == ArmyType.Cannon)
-            return 2;
-        else // type is Wild
-            return 3;
     }
 
     function getBoard() public view returns (string boardState) {
@@ -396,7 +376,8 @@ contract RISK {
         // config segment
         boardState = string(abi.encodePacked(boardState,"},"));
         boardState = string(abi.encodePacked(boardState,"config:{"));
-        boardState = string(abi.encodePacked(boardState,"turn: ", currentPlayer, "phase: ", getStatusIntValue(currentPlayer)));
+//        boardState = string(abi.encodePacked(boardState,"turn: ", currentPlayer, "phase: ", getStatusIntValue(currentPlayer)));
+        boardState = string(abi.encodePacked(boardState,"turn: ", currentPlayer, "phase: ", uint(Players[currentPlayer].status)));
         boardState = string(abi.encodePacked(boardState, "opponents: ", getCurrentPlayerOpponents(currentPlayer)));
         boardState = string(abi.encodePacked(boardState,"},"));
         // cards segment
