@@ -3,7 +3,7 @@ pragma solidity ^0.4.25;
 contract RISK {
     // Data Types
 
-    enum armyType {Solider, Horse, Cannon}
+    enum ArmyType {Solider, Horse, Cannon, Wild}
     enum Status {Waiting, Placing, Attacking, Transferring, Dead}
 
     struct Player {
@@ -11,6 +11,7 @@ contract RISK {
         Status status;
         uint index;
         uint armyIncome;
+        Card[] cards;
     }
     struct Continent {
         address owner;
@@ -27,11 +28,16 @@ contract RISK {
         uint[] adjRegions; //adjacencies that point to indexes of the Regions map
     }
 
-    //TODO: MAKE TOKEN CONTRACT FOR RISK CARD DRAW PILE AND CARDS
+    struct Card {
+        uint continent;
+        uint region;
+        ArmyType type;
+    }
 
     mapping(address => Player) Players;
     mapping(uint => Continent) Continents;
     mapping(uint => Region) Regions;
+    mapping(uint => Card) DrawPile;
     address[] PlayerAddrs;
     uint[] bonus = [3,7,2,5,5,2];
     uint[] numRegions = [6,12,4,7,9,4];
@@ -62,6 +68,7 @@ contract RISK {
             totalOffset += numRegions[i]; // Increase the offset
             Continents[i] = Continent(0,bonus[i],currRegInds);
         }
+        //TODO populate the card draw map struct
     }
 
     // Public Phase Functions
@@ -305,14 +312,98 @@ contract RISK {
 
     // Public View Functions
 
-    function getBoard() public view returns (string boardState) { // NOTE: use s =  string(abi.encodePacked("", "", "", "", "")); to concat the strings
-        string memory finalOut = "";
-        for(uint i=0; i <= 6 ;++i) {
-            string memory round = "";
-            //TODO FINISH THE view function
-            for(uint j=0; j < numRegions[i]; ++j) {
+    function getCurrentPlayer() internal view returns (address player) {
+        for(uint i = 0; i < PlayerAddrs.length; ++i) {
+            Status currStatus = Players[PlayerAddrs[i]].status;
+            if(currStatus != Status.Waiting || currStatus != Status.Dead)
+                return PlayerAddrs[i];
+        }
+        return 0;
+    }
 
+    //gets the opponents of the current players turn and returns them as a string in the form [player2, player3]
+    function getCurrentPlayerOpponents(address currentPlayer) internal view returns (string opponents) {
+        opponents = "[";
+        for(uint i=0; i <PlayerAddrs.length; ++i) {
+            if (currentPlayer != PlayerAddrs[i]) {
+                opponents = string(abi.encodePacked(opponents, PlayerAddrs[i]));
+                if(i+1 < PlayerAddrs.length)
+                    opponents = string(abi.encodePacked(opponents, ", "));
             }
         }
+        opponents = "]";
+        return opponents;
+    }
+
+    function getHand(address player) internal view returns(string handJSON) {
+        handJSON = "";
+        Card[] playerHand = Players[player].cards;
+        for(uint i=0; i<playerHand.length;++i) {
+            Card currCard = playerHand[i];
+            handJSON = string(abi.encodePacked(handJSON,i,":{"));
+            handJSON = string(abi.encodePacked(handJSON,"continent: ", currCard.continent, ", "));
+            handJSON = string(abi.encodePacked(handJSON,"country: ", currCard.region, ", "));
+            handJSON = string(abi.encodePacked(handJSON,"type: ", getArmyTypeIntValue(currCard.type), "}"));
+            if(i+1 < PlayerAddrs.length)
+                handJSON = string(abi.encodePacked(handJSON, ", "));
+        }
+    }
+
+    function getStatusIntValue(address player) internal view returns(uint value) {
+        Status currStatus = Players[player].status;
+        if(currStatus == Status.Waiting)
+            return 0;
+        else if(currStatus == Status.Placing)
+            return 1;
+        else if(currStatus == Status.Attacking)
+            return 2;
+        else // status is ded
+            return 3;
+    }
+
+    function getArmyTypeIntValue(ArmyType type) internal view returns(uint value) {
+        if(type == ArmyType.Solider)
+            return 0;
+        else if(type == ArmyType.Horse)
+            return 1;
+        else if(type == ArmyType.Cannon)
+            return 2;
+        else // type is Wild
+            return 3;
+    }
+
+    function getBoard() public view returns (string boardState) {
+        boardState = "";
+        // board segment
+        boardState = string(abi.encodePacked(boardState,"{", "board: {"));
+        for(uint cont=0; cont<6; ++cont) {
+            uint[] currRegions = Continents[cont].Regions;
+            boardState = string(abi.encodePacked(boardState,cont,":{"));
+            for(uint reg = 0; reg < currRegions.length; ++reg) {
+                Region currReg = Regions[currRegions[reg]];
+                boardState = string(abi.encodePacked(boardState,reg,":{","owner: ", currReg.owner, ",", "troops: ", currReg.numArmies));
+                if(reg+1 < currRegions.length)
+                    boardState = string(abi.encodePacked(boardState,"},"));
+                else
+                    boardState = string(abi.encodePacked(boardState,"}"));
+            }
+            if(j == 5)
+                boardState = string(abi.encodePacked(boardState,"}"));
+            else
+                boardState = string(abi.encodePacked(boardState,"},"));
+        }
+        address currentPlayer = getCurrentPlayer();
+        // config segment
+        boardState = string(abi.encodePacked(boardState,"},"));
+        boardState = string(abi.encodePacked(boardState,"config:{"));
+        boardState = string(abi.encodePacked(boardState,"turn: ", currentPlayer, "phase: ", getStatusIntValue(currentPlayer)));
+        boardState = string(abi.encodePacked(boardState, "opponents: ", getCurrentPlayerOpponents(currentPlayer)));
+        boardState = string(abi.encodePacked(boardState,"},"));
+        // cards segment
+        boardState = string(abi.encodePacked(boardState,"card:{","hand:{"));
+        boardState = string(abi.encodePacked(boardState,getHand(msg.sender), "}"));
+        // closing bracket
+        boardState = string(abi.encodePacked(boardState,"}"));
+        return boardState;
     }
 }
