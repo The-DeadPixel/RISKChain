@@ -13,7 +13,8 @@ class Board extends Component {
             board: props.board,
             outline: 'm0 0',
             makeSelections: props.makeSelect,
-            selections: props.selections
+            selections: props.selections,
+            colors: ['red','blue']
         }
 
         this.clickMap = this.clickMap.bind(this);
@@ -26,13 +27,21 @@ class Board extends Component {
             console.log('Not Country');
             country = event.target.getAttribute('data');
             if( ! country) {
+
                 return;
             }
         }else{
             country = event.target.id;
         }
-        console.log(country);
-        this.state.select(country);
+        let tmp = event.target.id.substr(1);
+        tmp = tmp.substr(0,tmp.length-1).split(',');
+        //console.log(this.state.board.board[tmp[0]][tmp[1]]);
+        var selection = {
+            country: country,
+            owner: this.state.board.board[tmp[0]][tmp[1]].owner,
+            troops: this.state.board.board[tmp[0]][tmp[1]].troops
+        };
+        this.state.select(selection);
 
         var country = document.getElementById(country);
         this.setState( {outline: country.getAttribute('d')});
@@ -61,26 +70,19 @@ class Board extends Component {
         });
         if(this.state.selections == '') {
             //console.log('getting outlines');
-            var lines = this.getOutlines('0xSEAN', 'green');
+            var lines = this.getOutlines(this.state.board.config.turn, 'green');
             console.log('setting state');
+            console.log(this.state.board.config.opponents);
+            for(var opponent in this.state.board.config.opponents){
+                console.log(this.state.board.config.opponents[opponent]);
+                lines.push(this.getOutlines(this.state.board.config.opponents[opponent], this.state.colors[opponent]));
+                //We can add a set of player colors into config here if we don't want to just view enemeis as 'red'
+            }
+            //lines.push(this.getOutlines('0xLUKE', 'red'));
+            //lines.push(this.getOutlines('0xDAVE','blue'));
             this.state.makeSelections(lines);
             this.setState( {selections: lines});
         }
-        var hilites = document.getElementsByClassName('outlines');
-        for(var outLineArray=[], index = hilites.length; index;) outLineArray[--index] = hilites[i];
-        //console.log('outline array');
-        //console.log(hilites.length);
-        //console.log(hilites);
-        for(let tmp in Object.keys(hilites)){
-            //console.log(tmp);
-        }
-        outLineArray.map((e)=>{
-            console.log(e);
-            ReactDOM.findDOMNode(e).addEventListener('mouseover', console.log.bind('over'));
-            ReactDOM.findDOMNode(e).addEventListener('mouseleave', console.log.bind('leave'));
-
-        });
-
 
     }
     getOutlines(player, color) {
@@ -102,11 +104,12 @@ class Board extends Component {
             for(var country in keys) {
                 //console.log((continents[cont].getElementsByClassName('country')));
                 if(this.state.board.board[cont][country].owner.localeCompare(player) === 0){
-                    console.log(this.state.board.board[cont][country]);
-                    linePath.push( (<path className='outlines' data={continents[cont].getElementsByClassName('country')[country].getAttribute('id')} key={'('+cont+','+country+')'} id="hilite" fill={color} strokeWidth="8" stroke="black" opacity="0.3" d={continents[cont].getElementsByClassName('country')[country].getAttribute('d')}/>) );
+                    let loc = continents[cont].getElementsByClassName('country')[country].getBBox();
+                    //console.log(loc);
+                    linePath.push( (<path className='outlines' data={continents[cont].getElementsByClassName('country')[country].getAttribute('id')} id={'('+cont+','+country+')'} key="hilite" fill={color} strokeWidth="8" stroke="black" opacity="0.5" d={continents[cont].getElementsByClassName('country')[country].getAttribute('d')}/>) );
                     //console.log((<path className='outline' key={'('+cont+','+country+')'}  id="hilite" fill={color} strokeWidth="8" stroke="black" opacity="0.3" d={continents[cont].getElementsByClassName('country')[country].getAttribute('d')}/>));
+                    linePath.push( <svg><text fontWeight={'1000'} x={loc.x+(loc.width/2)} y={loc.y+(loc.height/2)} fill={'black'} key={'('+cont+','+country+'):'+this.state.board.board[cont][country].troops} >{this.state.board.board[cont][country].troops}</text></svg>)
                 }
-
             }
         }
         //console.log(linePath);
@@ -186,8 +189,7 @@ class Board extends Component {
                 </g>
             </g>
             {this.state.selections}
-            <path className='outline' id="hilite" fill="white" strokeWidth="8" stroke="black" opacity="0.3" d={this.state.outline}/>
-
+            <path className='outline' id="hilite" fill="white" strokeWidth="8" stroke="yellow" opacity="0.5" d={this.state.outline}/>
         </svg>
 
     );
