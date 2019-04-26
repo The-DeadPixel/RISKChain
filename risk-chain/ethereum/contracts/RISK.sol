@@ -52,10 +52,10 @@ contract RISK {
     23,24,25,28,22,25,32,22,24,25,26,27,22,23,24,27,24,27,28,1,10,24,25,26,6,10,16,22,24,26,5,34,30,9,29,34,35,36,
     32,36,41,31,35,36,37,34,35,37,23,29,30,33,35,30,33,34,36,37,30,31,32,35,32,33,35,39,40,38,40,41,5,38,39,41,39,40,31];
 
-    // Constructor
-
-    function RISK() public {
+    // Constructor: setup string is a JSON that will populate the players and map owners
+    function RISK(string setup) public {
         //TODO populate the Player map struct
+        //TODO populate region owner
         uint totalOffset = 0;
         uint adjOffset = 0;
         tradeInVal = 4;
