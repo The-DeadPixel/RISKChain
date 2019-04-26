@@ -11,8 +11,10 @@ contract RISK {
         Status status;
         uint index;
         uint armyIncome;
+        uint tempArmyIncome; // income that comes from cards played and only applies to that turn
         Card[] cards;
     }
+
     struct Continent {
         address owner;
         uint bonus;
@@ -34,6 +36,8 @@ contract RISK {
         ArmyType type;
     }
 
+    uint tradeInVal;
+
     mapping(address => Player) Players;
     mapping(uint => Continent) Continents;
     mapping(uint => Region) Regions;
@@ -54,6 +58,7 @@ contract RISK {
         //TODO populate the Player map struct
         uint totalOffset = 0;
         uint adjOffset = 0;
+        tradeInVal = 4;
         for(uint i=0; i<= 6; ++i) {
             uint[] currRegInds;
             for(uint j=0; j < numRegions[i]; ++j) {
@@ -63,15 +68,17 @@ contract RISK {
                     currRegInds[k] = adjList[k+adjOffset];
                     adjOffset += 1; // cause Fuck it
                 }
-                Regions[j+totalOffset] = Region(0,j+totalOffset,0,i,numAdjList[j+totalOffset],currAdjInds);
-                // Initialize the region's card and add it to the draw pile (list)
-                DrawPile[j+totalOffset] = Card(j+totalOffset,i,ArmyType(j+totalOffset%4));
+                Regions[j+totalOffset] = Region(0,j+totalOffset,0,i,numAdjList[j+totalOffset],currAdjInds,Cards[],0);
+                // Initialize the region's card and add it to the draw pile (list) there are 42 cards, one for each region
+                DrawPile[j+totalOffset+2] = Card(j+totalOffset,i,ArmyType(j+totalOffset%3));
             }
             totalOffset += numRegions[i]; // Increase the offset
             Continents[i] = Continent(0,bonus[i],currRegInds);
         }
-        //TODO populate the card draw map struct
-        // there are 42 cards, one for each region
+
+        // Adding two wild cards to the end of the draw pile
+        DrawPile.append(Card(69,69,ArmyType(4)));
+        DrawPile.append(Card(69,69,ArmyType(4)));
     }
 
     // Public Phase Functions
@@ -91,16 +98,56 @@ contract RISK {
         return true;
     }
 
+    /** Drives all the requested cards to be played in one block
+    *   precondition: input is the index's of the cards to be played
+    *   precondition: the size of input must be 3
+    *   precondition: the player must be in the Placing status to play cards.
+    **/
+    function playCards(uint[] input) public returns(bool success) {
+        success = false;
+        require(Players[msg.sender].status == Status.Placing, "You can't play cards right now!");
+        require(input.length >= 3, "You have to play at least 3 cards!");
+        require(input.length < 4, "You can only play 3 cards at a time!");
+        require(Players[msg.sender].cards.length >= input.length,
+            "You are trying to play more cards then you own (might need a refresh)");
+        // assign the cards to check the logic
+        Card[] cards;
+        for(uint i=0; i<=2; ++i)
+            cards[i] = Players[msg.sender].cards[input[i]];
+        if(checkCards(cards, msg.sender)) {
+            Players[msg.sender].tempArmyIncome = tradeInVal;
+            // now need to remove the cards from the hand
+            for(uint i=0; i<=2; ++i) {
+                // remove the index from the list
+                for (uint j = input[i]; j<Players[msg.sender].cards.length-1; j++)
+                    Players[msg.sender].cards[j] = Players[msg.sender].cards[j+1];
+                delete Players[msg.sender].cards[Players[msg.sender].cards.length-1];
+                Players[msg.sender].cards.length--;
+            }
+            // after the sixth trade in value increases by 5
+            if(tradeInVal >= 15) tradeInVal += 5;
+            else tradeInVal += 2;
+            return success = true;
+        }
+        else
+            return success;
+    }
+
     /** Drives all the requested attacks as one block
     *   precondition: the length of numArmies must be the length of toLoc & fromLoc
     *   precondition: the player must be in the Attacking status to attack.
     **/
     function AttackDriver(uint[] input, uint seed) public returns(bool success) {
         success = false; // Only return true if the function has finished
+        victory = false; // only true if the attacker won once, thus will draw a risk card
         require(Players[msg.sender].status == Status.Attacking, "You can't attack right now!");
         for(uint i=0; i < input.length; i+=3) {
-            Attack(input[i], input[i+1], input[i+2], seed);
+            if(Attack(input[i], input[i+1], input[i+2], seed))
+                victory = true;
         }
+        // You can only ever have at most 6 cards at a time
+        if(victory && Players[msg.sender].cards.length <= 5 && DrawPile.length > 0)
+            drawCards(msg.sender, seed);
         Players[msg.sender].status = Status.Transferring;
         return true;
     }
@@ -135,8 +182,8 @@ contract RISK {
         return true;
     }
 
-    function Attack(uint fromLoc, uint toLoc, uint numArmies, uint seed) internal returns(bool success) {
-        success = false; // Only return true if the function has finished
+    function Attack(uint fromLoc, uint toLoc, uint numArmies, uint seed) internal returns(bool victory) {
+        victory = false;
 
         require(Regions[fromLoc].owner == msg.sender, "You can't attack from that region, you do not own it.");
         require(Regions[toLoc].owner != msg.sender, "Can only transfer troops during the transfer phase.");
@@ -189,13 +236,14 @@ contract RISK {
             //TODO impliment checking if defender is still alive and update it appropriatly
             Regions[toLoc].numArmies = numArmies; // remaining attacker armies are transfered to the toRegion
             Regions[toLoc].owner = msg.sender; // ownership is transfered to the attacker
+            victory = true;
         }
         // defender wins
         else {
             Regions[toLoc].numArmies = Regions[toLoc].numArmies; // remaining defender's armies
             Regions[fromLoc].numArmies += numArmies; // if the attacker stops attacking then the armies are transfered back, else will transfer 0 since all armies are gone.
         }
-        return true;
+        return victory;
     }
 
     function TrfArmies(uint numArmies, uint fromLoc, uint toLoc) internal returns(bool success) {
@@ -215,6 +263,54 @@ contract RISK {
     }
 
     // Internal Helper Functions
+
+    /* Check the logic if the cards can reward an amount of army income */
+    function checkCards(Card[] cards, address player) internal view returns(bool success) {
+        success = false;
+        bool wild = false;
+        uint wildIndex;
+        Card[] nonWilds;
+        // check if any cards are wild
+        for(uint i=0; i<=2; ++i) {
+            if(cards[i] == ArmyType.Wild) {
+                wildIndex = i;
+                wild = true;
+                break;
+            }
+            else nonWilds.append(i);
+        }
+        if(wild) {
+            // 3 cards of the same armyType or 1 of each armyType
+            if((nonWilds[0].type == nonWilds[1].type) || (nonWilds[0].type != nonWilds[1].type)) {
+                success = true;
+                CompareCardToRegion(cards, player);
+                return success;
+            }
+            else
+                return false;
+        }
+        else {
+            // 3 cards of the same armyType or 1 of each armyType
+            if((cards[0].type == cards[1].type && cards[0].type == cards[2].type) ||
+                (cards[0].type != cards[1].type && cards[0].type != cards[2].type && cards[1].type != cards[2].type)) {
+                success = true;
+                CompareCardToRegion(cards, player);
+                return success;
+            }
+            else
+                return false;
+        }
+    }
+
+    /* If one of the cards has a region that the player owns then place two extra troops in that region */
+    function CompareCardToRegion(Card[] cards, address player) internal {
+        for(uint i=0; i<=2; ++i) {
+            if(Regions[cards[i].region].owner == player){
+                Regions[cards[i].region].numArmies += 2;
+                break;
+            }
+        }
+    }
 
     /* Generates a random number from 0 to 5 based on the last block hash */
     function Rolldie(uint seed) view internal returns (uint randomNumber) {
@@ -313,9 +409,20 @@ contract RISK {
             quickSort(arr, i, right);
     }
 
+    function drawCards(address player, uint seed) internal {
+        uint value = uint(keccak256(block.blockhash(block.number-1), seed))%DrawPile.length;
+        if (value >= DrawPile.length) return;
+        Players[player].cards.push(DrawPile[value]); // adding the card to the current hand
+        // remove the index from the list
+        for (uint i = value; i<DrawPile.length-1; i++)
+            DrawPile[i] = DrawPile[i+1];
+        delete DrawPile[DrawPile.length-1];
+        DrawPile.length--;
+    }
+
     // Public View Functions
 
-    function getCurrentPlayer() internal view returns (address player) {
+    function getCurrentPlayer() public view returns (address player) {
         for(uint i = 0; i < PlayerAddrs.length; ++i) {
             Status currStatus = Players[PlayerAddrs[i]].status;
             if(currStatus != Status.Waiting || currStatus != Status.Dead)
@@ -325,7 +432,7 @@ contract RISK {
     }
 
     //gets the opponents of the current players turn and returns them as a string in the form [player2, player3]
-    function getCurrentPlayerOpponents(address currentPlayer) internal view returns (string opponents) {
+    function getCurrentPlayerOpponents(address currentPlayer) public view returns (string opponents) {
         opponents = "[";
         for(uint i=0; i <PlayerAddrs.length; ++i) {
             if (currentPlayer != PlayerAddrs[i]) {
@@ -338,7 +445,7 @@ contract RISK {
         return opponents;
     }
 
-    function getHand(address player) internal view returns(string handJSON) {
+    function getHand(address player) public view returns(string handJSON) {
         handJSON = "";
         Card[] playerHand = Players[player].cards;
         for(uint i=0; i<playerHand.length;++i) {
@@ -350,6 +457,10 @@ contract RISK {
             if(i+1 < PlayerAddrs.length)
                 handJSON = string(abi.encodePacked(handJSON, ", "));
         }
+    }
+
+    function getSizeOfHand(address player) view returns(uint size) {
+        return Players[player].cards.length;
     }
 
     function getBoard() public view returns (string boardState) {
