@@ -1,4 +1,5 @@
 pragma solidity ^0.4.25;
+pragma experimental ABIEncoderV2;
 
 contract RISK {
     // Data Types
@@ -11,8 +12,12 @@ contract RISK {
         Status status;
         uint index;
         uint armyIncome;
-        Card[] cards;
+        uint tempArmyIncome; // income that comes from cards played and only applies to that turn
+        uint handSize;
+        uint[] ownedRegions;
+        mapping(uint => Card) hand;
     }
+
     struct Continent {
         address owner;
         uint bonus;
@@ -21,23 +26,26 @@ contract RISK {
 
     struct Region {
         address owner;
-        uint index; // index of the regions map (useful for checking adjacencies)
+        uint index; // index of the regions map (useful for checking adjacency's)
         uint numArmies;
         uint continent;
         uint adjLength;
-        uint[] adjRegions; //adjacencies that point to indexes of the Regions map
+        uint[] adjRegions; //adjacency's that point to indexes of the Regions map
     }
 
     struct Card {
         uint continent;
         uint region;
-        ArmyType type;
+        ArmyType aType;
     }
 
+    uint tradeInVal;
+    uint Seed;
     mapping(address => Player) Players;
     mapping(uint => Continent) Continents;
     mapping(uint => Region) Regions;
     Card[] DrawPile;
+    uint[] listOwn;
     address[] PlayerAddrs;
     uint[] bonus = [3,7,2,5,5,2];
     uint[] numRegions = [6,12,4,7,9,4];
@@ -48,30 +56,57 @@ contract RISK {
     23,24,25,28,22,25,32,22,24,25,26,27,22,23,24,27,24,27,28,1,10,24,25,26,6,10,16,22,24,26,5,34,30,9,29,34,35,36,
     32,36,41,31,35,36,37,34,35,37,23,29,30,33,35,30,33,34,36,37,30,31,32,35,32,33,35,39,40,38,40,41,5,38,39,41,39,40,31];
 
-    // Constructor
-
-    function RISK() public {
-        //TODO populate the Player map struct
+    // Constructor: setup string is a JSON that will populate the players and map owners
+    /*
+    * precondition: if names is defined, players and names MUST be the same length
+    */
+    function RISK(address[] players, string[] names, uint seed) public {
         uint totalOffset = 0;
         uint adjOffset = 0;
+        uint initIncome = 50 - 5 * players.length; // the appropriate start of income depending on number of players
+
+        if(seed == 0) {
+            seed = uint(keccak256(block.blockhash(block.number-1), uint(keccak256(players)), now));
+            Seed = seed;
+        }
+        else {
+            Seed = seed;
+        }
+        for(uint pli = 0; pli < players.length; ++pli) {
+            PlayerAddrs[pli] = players[pli];
+            if(names.length != 0) {
+                string memory currName = names[pli];
+                Players[PlayerAddrs[pli]] = Player(currName, Status.Waiting, pli, initIncome, 0, 0, listOwn);
+            }
+            else
+                Players[PlayerAddrs[pli]] = Player(string(abi.encodePacked("player", pli+1)), Status.Waiting, pli, initIncome, 0, 0, listOwn);
+        }
+        // set the first player turn status to placing
+        Players[PlayerAddrs[0]].status = Status.Placing;
+
+        tradeInVal = 4;
         for(uint i=0; i<= 6; ++i) {
             uint[] currRegInds;
             for(uint j=0; j < numRegions[i]; ++j) {
+                uint offsetIndex = j+totalOffset;
                 uint[] currAdjInds;
                 currRegInds[j] = j+totalOffset; // totalOffset is the offset of the Regions map
                 for(uint k=0; k < numAdjList[j+totalOffset]; ++k) {
                     currRegInds[k] = adjList[k+adjOffset];
                     adjOffset += 1; // cause Fuck it
                 }
-                Regions[j+totalOffset] = Region(0,j+totalOffset,0,i,numAdjList[j+totalOffset],currAdjInds);
-                // Initialize the region's card and add it to the draw pile (list)
-                DrawPile[j+totalOffset] = Card(j+totalOffset,i,ArmyType(j+totalOffset%4));
+                Regions[j+totalOffset] = Region(PlayerAddrs[offsetIndex%PlayerAddrs.length],j+totalOffset,1,i,numAdjList[j+totalOffset],currAdjInds);
+                Players[PlayerAddrs[offsetIndex%PlayerAddrs.length]].armyIncome -= 1; // this player has placed a troop
+                Players[PlayerAddrs[offsetIndex%PlayerAddrs.length]].ownedRegions.push(j+totalOffset);
+                // Initialize the region's card and add it to the draw pile (list) there are 42 cards, one for each region
+                DrawPile[j+totalOffset+2] = Card(j+totalOffset,i,ArmyType(j+totalOffset%3));
             }
             totalOffset += numRegions[i]; // Increase the offset
             Continents[i] = Continent(0,bonus[i],currRegInds);
         }
-        //TODO populate the card draw map struct
-        // there are 42 cards, one for each region
+        // Adding two wild cards to the end of the draw pile
+        DrawPile.push(Card(69,69,ArmyType(4)));
+        DrawPile.push(Card(69,69,ArmyType(4)));
     }
 
     // Public Phase Functions
@@ -91,16 +126,56 @@ contract RISK {
         return true;
     }
 
+    /** Drives all the requested cards to be played in one block
+    *   precondition: input is the index's of the cards to be played
+    *   precondition: the size of input must be 3
+    *   precondition: the player must be in the Placing status to play cards.
+    **/
+    function playCards(uint[] input) public returns(bool success) {
+        success = false;
+        require(Players[msg.sender].status == Status.Placing, "You can't play cards right now!");
+        require(input.length >= 3, "You have to play at least 3 cards!");
+        require(input.length < 4, "You can only play 3 cards at a time!");
+        require(Players[msg.sender].handSize >= input.length,
+            "You are trying to play more cards then you own (might need a refresh)");
+        // assign the cards to check the logic
+        Card[] cards;
+        for(uint currCard=0; currCard<=2; ++currCard)
+            cards[currCard] = Players[msg.sender].hand[input[currCard]];
+        if(checkCards(cards, msg.sender)) {
+            Players[msg.sender].tempArmyIncome = tradeInVal;
+            // now need to remove the cards from the hand
+            for(uint i=0; i<=2; ++i) {
+                // remove the index from the list
+                for (uint j = input[i]; j<Players[msg.sender].handSize-1; j++)
+                    Players[msg.sender].hand[j] = Players[msg.sender].hand[j+1];
+                delete Players[msg.sender].hand[Players[msg.sender].handSize-1];
+                Players[msg.sender].handSize--;
+            }
+            // after the sixth trade in value increases by 5
+            if(tradeInVal >= 15) tradeInVal += 5;
+            else tradeInVal += 2;
+            return success = true;
+        }
+        else
+            return success;
+    }
+
     /** Drives all the requested attacks as one block
     *   precondition: the length of numArmies must be the length of toLoc & fromLoc
     *   precondition: the player must be in the Attacking status to attack.
     **/
-    function AttackDriver(uint[] input, uint seed) public returns(bool success) {
+    function AttackDriver(uint[] input) public returns(bool success) {
         success = false; // Only return true if the function has finished
+        bool victory = false; // only true if the attacker won once, thus will draw a risk card
         require(Players[msg.sender].status == Status.Attacking, "You can't attack right now!");
         for(uint i=0; i < input.length; i+=3) {
-            Attack(input[i], input[i+1], input[i+2], seed);
+            if(Attack(input[i], input[i+1], input[i+2], Seed))
+                victory = true;
         }
+        // You can only ever have at most 6 cards at a time
+        if(victory && Players[msg.sender].handSize <= 5 && DrawPile.length > 0)
+            drawCards(msg.sender, Seed);
         Players[msg.sender].status = Status.Transferring;
         return true;
     }
@@ -135,8 +210,8 @@ contract RISK {
         return true;
     }
 
-    function Attack(uint fromLoc, uint toLoc, uint numArmies, uint seed) internal returns(bool success) {
-        success = false; // Only return true if the function has finished
+    function Attack(uint fromLoc, uint toLoc, uint numArmies) internal returns(bool victory) {
+        victory = false;
 
         require(Regions[fromLoc].owner == msg.sender, "You can't attack from that region, you do not own it.");
         require(Regions[toLoc].owner != msg.sender, "Can only transfer troops during the transfer phase.");
@@ -164,11 +239,11 @@ contract RISK {
 
             /* Calculate random dice rolls and sort them from lowest to highest using quickSort*/
             for (uint i = 0; i < atckDice; i++)
-                atckDie[i] = Rolldie(seed);
+                atckDie[i] = Rolldie();
             atckDie = sort(atckDie,atckDice);
 
             for (uint j = 0; i < defDice; j++)
-                defDie[i] = Rolldie(seed);
+                defDie[i] = Rolldie();
             defDie = sort(defDie,defDice);
 
             /* Compare the rolls and calculate losses */
@@ -189,13 +264,14 @@ contract RISK {
             //TODO impliment checking if defender is still alive and update it appropriatly
             Regions[toLoc].numArmies = numArmies; // remaining attacker armies are transfered to the toRegion
             Regions[toLoc].owner = msg.sender; // ownership is transfered to the attacker
+            victory = true;
         }
         // defender wins
         else {
             Regions[toLoc].numArmies = Regions[toLoc].numArmies; // remaining defender's armies
             Regions[fromLoc].numArmies += numArmies; // if the attacker stops attacking then the armies are transfered back, else will transfer 0 since all armies are gone.
         }
-        return true;
+        return victory;
     }
 
     function TrfArmies(uint numArmies, uint fromLoc, uint toLoc) internal returns(bool success) {
@@ -216,9 +292,57 @@ contract RISK {
 
     // Internal Helper Functions
 
+    /* Check the logic if the cards can reward an amount of army income */
+    function checkCards(Card[] cards, address player) internal view returns(bool success) {
+        success = false;
+        bool wild = false;
+        uint wildIndex;
+        Card[] nonWilds;
+        // check if any cards are wild
+        for(uint i=0; i<=2; ++i) {
+            if(cards[i].aType == ArmyType.Wild) {
+                wildIndex = i;
+                wild = true;
+                break;
+            }
+            else nonWilds.push(cards[i]);
+        }
+        if(wild) {
+            // 3 cards of the same armyType or 1 of each armyType
+            if((nonWilds[0].aType == nonWilds[1].aType) || (nonWilds[0].aType != nonWilds[1].aType)) {
+                success = true;
+                CompareCardToRegion(cards, player);
+                return success;
+            }
+            else
+                return false;
+        }
+        else {
+            // 3 cards of the same armyType or 1 of each armyType
+            if((cards[0].aType == cards[1].aType && cards[0].aType == cards[2].aType) ||
+                (cards[0].aType != cards[1].aType && cards[0].aType != cards[2].aType && cards[1].aType != cards[2].aType)) {
+                success = true;
+                CompareCardToRegion(cards, player);
+                return success;
+            }
+            else
+                return false;
+        }
+    }
+
+    /* If one of the cards has a region that the player owns then place two extra troops in that region */
+    function CompareCardToRegion(Card[] cards, address player) internal {
+        for(uint i=0; i<=2; ++i) {
+            if(Regions[cards[i].region].owner == player){
+                Regions[cards[i].region].numArmies += 2;
+                break;
+            }
+        }
+    }
+
     /* Generates a random number from 0 to 5 based on the last block hash */
-    function Rolldie(uint seed) view internal returns (uint randomNumber) {
-        return(uint(keccak256(block.blockhash(block.number-1), seed ))%5);
+    function Rolldie() view internal returns (uint randomNumber) {
+        return(uint(keccak256(block.blockhash(block.number-1), Seed ))%5);
     }
 
     /* Given a Region and a Location, will check if the Location exists in the adjacancy map */
@@ -313,9 +437,22 @@ contract RISK {
             quickSort(arr, i, right);
     }
 
+    function drawCards(address player) internal {
+        uint value = uint(keccak256(block.blockhash(block.number-1), Seed))%DrawPile.length;
+        if (value >= DrawPile.length) return;
+        // Players[player].hand.push(DrawPile[value]); // adding the card to the current hand
+        Players[player].hand[Players[player].handSize] = DrawPile[value];
+        Players[player].handSize += 1;
+        // remove the index from the list
+        for (uint i = value; i<DrawPile.length-1; i++)
+            DrawPile[i] = DrawPile[i+1];
+        delete DrawPile[DrawPile.length-1];
+        DrawPile.length--;
+    }
+
     // Public View Functions
 
-    function getCurrentPlayer() internal view returns (address player) {
+    function getCurrentPlayer() public view returns (address player) {
         for(uint i = 0; i < PlayerAddrs.length; ++i) {
             Status currStatus = Players[PlayerAddrs[i]].status;
             if(currStatus != Status.Waiting || currStatus != Status.Dead)
@@ -325,7 +462,7 @@ contract RISK {
     }
 
     //gets the opponents of the current players turn and returns them as a string in the form [player2, player3]
-    function getCurrentPlayerOpponents(address currentPlayer) internal view returns (string opponents) {
+    function getCurrentPlayerOpponents(address currentPlayer) public view returns (string opponents) {
         opponents = "[";
         for(uint i=0; i <PlayerAddrs.length; ++i) {
             if (currentPlayer != PlayerAddrs[i]) {
@@ -338,18 +475,22 @@ contract RISK {
         return opponents;
     }
 
-    function getHand(address player) internal view returns(string handJSON) {
+    function getHand(address player) public view returns(string handJSON) {
         handJSON = "";
-        Card[] playerHand = Players[player].cards;
-        for(uint i=0; i<playerHand.length;++i) {
-            Card currCard = playerHand[i];
+        Player playerHand = Players[player];
+        for(uint i=0; i<playerHand.handSize;++i) {
+            Card currCard = playerHand.hand[i];
             handJSON = string(abi.encodePacked(handJSON,i,":{"));
             handJSON = string(abi.encodePacked(handJSON,"continent: ", currCard.continent, ", "));
             handJSON = string(abi.encodePacked(handJSON,"country: ", currCard.region, ", "));
-            handJSON = string(abi.encodePacked(handJSON,"type: ", uint(currCard.type), "}"));
+            handJSON = string(abi.encodePacked(handJSON,"type: ", uint(currCard.aType), "}"));
             if(i+1 < PlayerAddrs.length)
                 handJSON = string(abi.encodePacked(handJSON, ", "));
         }
+    }
+
+    function getSizeOfHand(address player) view returns(uint size) {
+        return Players[player].handSize;
     }
 
     function getBoard() public view returns (string boardState) {
@@ -367,7 +508,7 @@ contract RISK {
                 else
                     boardState = string(abi.encodePacked(boardState,"}"));
             }
-            if(j == 5)
+            if(cont == 5)
                 boardState = string(abi.encodePacked(boardState,"}"));
             else
                 boardState = string(abi.encodePacked(boardState,"},"));
@@ -376,7 +517,7 @@ contract RISK {
         // config segment
         boardState = string(abi.encodePacked(boardState,"},"));
         boardState = string(abi.encodePacked(boardState,"config:{"));
-//        boardState = string(abi.encodePacked(boardState,"turn: ", currentPlayer, "phase: ", getStatusIntValue(currentPlayer)));
+        //        boardState = string(abi.encodePacked(boardState,"turn: ", currentPlayer, "phase: ", getStatusIntValue(currentPlayer)));
         boardState = string(abi.encodePacked(boardState,"turn: ", currentPlayer, "phase: ", uint(Players[currentPlayer].status)));
         boardState = string(abi.encodePacked(boardState, "opponents: ", getCurrentPlayerOpponents(currentPlayer)));
         boardState = string(abi.encodePacked(boardState,"},"));
