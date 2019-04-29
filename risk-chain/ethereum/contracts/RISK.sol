@@ -165,17 +165,17 @@ contract RISK {
     *   precondition: the length of numArmies must be the length of toLoc & fromLoc
     *   precondition: the player must be in the Attacking status to attack.
     **/
-    function AttackDriver(uint[] input, uint seed) public returns(bool success) {
+    function AttackDriver(uint[] input) public returns(bool success) {
         success = false; // Only return true if the function has finished
         bool victory = false; // only true if the attacker won once, thus will draw a risk card
         require(Players[msg.sender].status == Status.Attacking, "You can't attack right now!");
         for(uint i=0; i < input.length; i+=3) {
-            if(Attack(input[i], input[i+1], input[i+2], seed))
+            if(Attack(input[i], input[i+1], input[i+2], Seed))
                 victory = true;
         }
         // You can only ever have at most 6 cards at a time
         if(victory && Players[msg.sender].handSize <= 5 && DrawPile.length > 0)
-            drawCards(msg.sender, seed);
+            drawCards(msg.sender, Seed);
         Players[msg.sender].status = Status.Transferring;
         return true;
     }
@@ -210,7 +210,7 @@ contract RISK {
         return true;
     }
 
-    function Attack(uint fromLoc, uint toLoc, uint numArmies, uint seed) internal returns(bool victory) {
+    function Attack(uint fromLoc, uint toLoc, uint numArmies) internal returns(bool victory) {
         victory = false;
 
         require(Regions[fromLoc].owner == msg.sender, "You can't attack from that region, you do not own it.");
@@ -239,11 +239,11 @@ contract RISK {
 
             /* Calculate random dice rolls and sort them from lowest to highest using quickSort*/
             for (uint i = 0; i < atckDice; i++)
-                atckDie[i] = Rolldie(seed);
+                atckDie[i] = Rolldie();
             atckDie = sort(atckDie,atckDice);
 
             for (uint j = 0; i < defDice; j++)
-                defDie[i] = Rolldie(seed);
+                defDie[i] = Rolldie();
             defDie = sort(defDie,defDice);
 
             /* Compare the rolls and calculate losses */
@@ -341,8 +341,8 @@ contract RISK {
     }
 
     /* Generates a random number from 0 to 5 based on the last block hash */
-    function Rolldie(uint seed) view internal returns (uint randomNumber) {
-        return(uint(keccak256(block.blockhash(block.number-1), seed ))%5);
+    function Rolldie() view internal returns (uint randomNumber) {
+        return(uint(keccak256(block.blockhash(block.number-1), Seed ))%5);
     }
 
     /* Given a Region and a Location, will check if the Location exists in the adjacancy map */
@@ -437,8 +437,8 @@ contract RISK {
             quickSort(arr, i, right);
     }
 
-    function drawCards(address player, uint seed) internal {
-        uint value = uint(keccak256(block.blockhash(block.number-1), seed))%DrawPile.length;
+    function drawCards(address player) internal {
+        uint value = uint(keccak256(block.blockhash(block.number-1), Seed))%DrawPile.length;
         if (value >= DrawPile.length) return;
         // Players[player].hand.push(DrawPile[value]); // adding the card to the current hand
         Players[player].hand[Players[player].handSize] = DrawPile[value];
