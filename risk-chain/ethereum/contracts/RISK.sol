@@ -1,4 +1,5 @@
 pragma solidity ^0.4.25;
+pragma experimental ABIEncoderV2;
 
 contract RISK {
     // Data Types
@@ -13,6 +14,7 @@ contract RISK {
         uint armyIncome;
         uint tempArmyIncome; // income that comes from cards played and only applies to that turn
         uint handSize;
+        uint[] ownedRegions;
         mapping(uint => Card) hand;
     }
 
@@ -24,11 +26,11 @@ contract RISK {
 
     struct Region {
         address owner;
-        uint index; // index of the regions map (useful for checking adjacencies)
+        uint index; // index of the regions map (useful for checking adjacency's)
         uint numArmies;
         uint continent;
         uint adjLength;
-        uint[] adjRegions; //adjacencies that point to indexes of the Regions map
+        uint[] adjRegions; //adjacency's that point to indexes of the Regions map
     }
 
     struct Card {
@@ -43,6 +45,7 @@ contract RISK {
     mapping(uint => Continent) Continents;
     mapping(uint => Region) Regions;
     Card[] DrawPile;
+    uint[] listOwn;
     address[] PlayerAddrs;
     uint[] bonus = [3,7,2,5,5,2];
     uint[] numRegions = [6,12,4,7,9,4];
@@ -57,45 +60,42 @@ contract RISK {
     /*
     * precondition: if names is defined, players and names MUST be the same length
     */
-    function RISK(address[] players, string names, bytes32 seed) public {
+    function RISK(address[] players, string[] names, bytes32 seed) public {
         uint totalOffset = 0;
         uint adjOffset = 0;
-        bool hasNames = false;
-        string memory defaultPlayerName = "player";
-
-        //TODO populate the Player map struct
-        if(bytes(names).length != 0)
-            hasNames = true;
-
+        uint initIncome = 50 - 5 * players.length; // the appropriate start of income depending on number of players
         for(uint pli = 0; pli < players.length; ++pli) {
             PlayerAddrs[pli] = players[pli];
-            if(hasNames) {
-                Players[PlayerAddrs[pli]] = Player("", Status.Waiting, pli, 0, 0, 0);
+            if(names.length != 0) {
+                string memory currName = names[pli];
+                Players[PlayerAddrs[pli]] = Player(currName, Status.Waiting, pli, initIncome, 0, 0, listOwn);
             }
-            else {
-
-            }
+            else
+                Players[PlayerAddrs[pli]] = Player(string(abi.encodePacked("player", pli+1)), Status.Waiting, pli, initIncome, 0, 0, listOwn);
         }
+        // set the first player turn status to placing
+        Players[PlayerAddrs[0]].status = Status.Placing;
 
         tradeInVal = 4;
         for(uint i=0; i<= 6; ++i) {
             uint[] currRegInds;
             for(uint j=0; j < numRegions[i]; ++j) {
+                uint offsetIndex = j+totalOffset;
                 uint[] currAdjInds;
                 currRegInds[j] = j+totalOffset; // totalOffset is the offset of the Regions map
                 for(uint k=0; k < numAdjList[j+totalOffset]; ++k) {
                     currRegInds[k] = adjList[k+adjOffset];
                     adjOffset += 1; // cause Fuck it
                 }
-                //TODO populate region owner
-                Regions[j+totalOffset] = Region(0,j+totalOffset,0,i,numAdjList[j+totalOffset],currAdjInds);
+                Regions[j+totalOffset] = Region(PlayerAddrs[offsetIndex%PlayerAddrs.length],j+totalOffset,1,i,numAdjList[j+totalOffset],currAdjInds);
+                Players[PlayerAddrs[offsetIndex%PlayerAddrs.length]].armyIncome -= 1; // this player has placed a troop
+                Players[PlayerAddrs[offsetIndex%PlayerAddrs.length]].ownedRegions.push(j+totalOffset);
                 // Initialize the region's card and add it to the draw pile (list) there are 42 cards, one for each region
                 DrawPile[j+totalOffset+2] = Card(j+totalOffset,i,ArmyType(j+totalOffset%3));
             }
             totalOffset += numRegions[i]; // Increase the offset
             Continents[i] = Continent(0,bonus[i],currRegInds);
         }
-
         // Adding two wild cards to the end of the draw pile
         DrawPile.push(Card(69,69,ArmyType(4)));
         DrawPile.push(Card(69,69,ArmyType(4)));
