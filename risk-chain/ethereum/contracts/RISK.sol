@@ -12,7 +12,8 @@ contract RISK {
         uint index;
         uint armyIncome;
         uint tempArmyIncome; // income that comes from cards played and only applies to that turn
-        Card[] cards;
+        uint handSize;
+        mapping(uint => Card) hand;
     }
 
     struct Continent {
@@ -33,7 +34,7 @@ contract RISK {
     struct Card {
         uint continent;
         uint region;
-        ArmyType type;
+        ArmyType aType;
     }
 
     uint tradeInVal;
@@ -53,11 +54,29 @@ contract RISK {
     32,36,41,31,35,36,37,34,35,37,23,29,30,33,35,30,33,34,36,37,30,31,32,35,32,33,35,39,40,38,40,41,5,38,39,41,39,40,31];
 
     // Constructor: setup string is a JSON that will populate the players and map owners
-    function RISK(string setup) public {
-        //TODO populate the Player map struct
-        //TODO populate region owner
+    /*
+    * precondition: if names is defined, players and names MUST be the same length
+    */
+    function RISK(address[] players, string names, bytes32 seed) public {
         uint totalOffset = 0;
         uint adjOffset = 0;
+        bool hasNames = false;
+        string memory defaultPlayerName = "player";
+
+        //TODO populate the Player map struct
+        if(bytes(names).length != 0)
+            hasNames = true;
+
+        for(uint pli = 0; pli < players.length; ++pli) {
+            PlayerAddrs[pli] = players[pli];
+            if(hasNames) {
+                Players[PlayerAddrs[pli]] = Player("", Status.Waiting, pli, 0, 0, 0);
+            }
+            else {
+
+            }
+        }
+
         tradeInVal = 4;
         for(uint i=0; i<= 6; ++i) {
             uint[] currRegInds;
@@ -68,7 +87,8 @@ contract RISK {
                     currRegInds[k] = adjList[k+adjOffset];
                     adjOffset += 1; // cause Fuck it
                 }
-                Regions[j+totalOffset] = Region(0,j+totalOffset,0,i,numAdjList[j+totalOffset],currAdjInds,Cards[],0);
+                //TODO populate region owner
+                Regions[j+totalOffset] = Region(0,j+totalOffset,0,i,numAdjList[j+totalOffset],currAdjInds);
                 // Initialize the region's card and add it to the draw pile (list) there are 42 cards, one for each region
                 DrawPile[j+totalOffset+2] = Card(j+totalOffset,i,ArmyType(j+totalOffset%3));
             }
@@ -77,8 +97,8 @@ contract RISK {
         }
 
         // Adding two wild cards to the end of the draw pile
-        DrawPile.append(Card(69,69,ArmyType(4)));
-        DrawPile.append(Card(69,69,ArmyType(4)));
+        DrawPile.push(Card(69,69,ArmyType(4)));
+        DrawPile.push(Card(69,69,ArmyType(4)));
     }
 
     // Public Phase Functions
@@ -108,21 +128,21 @@ contract RISK {
         require(Players[msg.sender].status == Status.Placing, "You can't play cards right now!");
         require(input.length >= 3, "You have to play at least 3 cards!");
         require(input.length < 4, "You can only play 3 cards at a time!");
-        require(Players[msg.sender].cards.length >= input.length,
+        require(Players[msg.sender].handSize >= input.length,
             "You are trying to play more cards then you own (might need a refresh)");
         // assign the cards to check the logic
         Card[] cards;
-        for(uint i=0; i<=2; ++i)
-            cards[i] = Players[msg.sender].cards[input[i]];
+        for(uint currCard=0; currCard<=2; ++currCard)
+            cards[currCard] = Players[msg.sender].hand[input[currCard]];
         if(checkCards(cards, msg.sender)) {
             Players[msg.sender].tempArmyIncome = tradeInVal;
             // now need to remove the cards from the hand
             for(uint i=0; i<=2; ++i) {
                 // remove the index from the list
-                for (uint j = input[i]; j<Players[msg.sender].cards.length-1; j++)
-                    Players[msg.sender].cards[j] = Players[msg.sender].cards[j+1];
-                delete Players[msg.sender].cards[Players[msg.sender].cards.length-1];
-                Players[msg.sender].cards.length--;
+                for (uint j = input[i]; j<Players[msg.sender].handSize-1; j++)
+                    Players[msg.sender].hand[j] = Players[msg.sender].hand[j+1];
+                delete Players[msg.sender].hand[Players[msg.sender].handSize-1];
+                Players[msg.sender].handSize--;
             }
             // after the sixth trade in value increases by 5
             if(tradeInVal >= 15) tradeInVal += 5;
@@ -139,14 +159,14 @@ contract RISK {
     **/
     function AttackDriver(uint[] input, uint seed) public returns(bool success) {
         success = false; // Only return true if the function has finished
-        victory = false; // only true if the attacker won once, thus will draw a risk card
+        bool victory = false; // only true if the attacker won once, thus will draw a risk card
         require(Players[msg.sender].status == Status.Attacking, "You can't attack right now!");
         for(uint i=0; i < input.length; i+=3) {
             if(Attack(input[i], input[i+1], input[i+2], seed))
                 victory = true;
         }
         // You can only ever have at most 6 cards at a time
-        if(victory && Players[msg.sender].cards.length <= 5 && DrawPile.length > 0)
+        if(victory && Players[msg.sender].handSize <= 5 && DrawPile.length > 0)
             drawCards(msg.sender, seed);
         Players[msg.sender].status = Status.Transferring;
         return true;
@@ -272,16 +292,16 @@ contract RISK {
         Card[] nonWilds;
         // check if any cards are wild
         for(uint i=0; i<=2; ++i) {
-            if(cards[i] == ArmyType.Wild) {
+            if(cards[i].aType == ArmyType.Wild) {
                 wildIndex = i;
                 wild = true;
                 break;
             }
-            else nonWilds.append(i);
+            else nonWilds.push(cards[i]);
         }
         if(wild) {
             // 3 cards of the same armyType or 1 of each armyType
-            if((nonWilds[0].type == nonWilds[1].type) || (nonWilds[0].type != nonWilds[1].type)) {
+            if((nonWilds[0].aType == nonWilds[1].aType) || (nonWilds[0].aType != nonWilds[1].aType)) {
                 success = true;
                 CompareCardToRegion(cards, player);
                 return success;
@@ -291,8 +311,8 @@ contract RISK {
         }
         else {
             // 3 cards of the same armyType or 1 of each armyType
-            if((cards[0].type == cards[1].type && cards[0].type == cards[2].type) ||
-                (cards[0].type != cards[1].type && cards[0].type != cards[2].type && cards[1].type != cards[2].type)) {
+            if((cards[0].aType == cards[1].aType && cards[0].aType == cards[2].aType) ||
+                (cards[0].aType != cards[1].aType && cards[0].aType != cards[2].aType && cards[1].aType != cards[2].aType)) {
                 success = true;
                 CompareCardToRegion(cards, player);
                 return success;
@@ -412,7 +432,9 @@ contract RISK {
     function drawCards(address player, uint seed) internal {
         uint value = uint(keccak256(block.blockhash(block.number-1), seed))%DrawPile.length;
         if (value >= DrawPile.length) return;
-        Players[player].cards.push(DrawPile[value]); // adding the card to the current hand
+        // Players[player].hand.push(DrawPile[value]); // adding the card to the current hand
+        Players[player].hand[Players[player].handSize] = DrawPile[value];
+        Players[player].handSize += 1;
         // remove the index from the list
         for (uint i = value; i<DrawPile.length-1; i++)
             DrawPile[i] = DrawPile[i+1];
@@ -447,20 +469,20 @@ contract RISK {
 
     function getHand(address player) public view returns(string handJSON) {
         handJSON = "";
-        Card[] playerHand = Players[player].cards;
-        for(uint i=0; i<playerHand.length;++i) {
-            Card currCard = playerHand[i];
+        Player playerHand = Players[player];
+        for(uint i=0; i<playerHand.handSize;++i) {
+            Card currCard = playerHand.hand[i];
             handJSON = string(abi.encodePacked(handJSON,i,":{"));
             handJSON = string(abi.encodePacked(handJSON,"continent: ", currCard.continent, ", "));
             handJSON = string(abi.encodePacked(handJSON,"country: ", currCard.region, ", "));
-            handJSON = string(abi.encodePacked(handJSON,"type: ", uint(currCard.type), "}"));
+            handJSON = string(abi.encodePacked(handJSON,"type: ", uint(currCard.aType), "}"));
             if(i+1 < PlayerAddrs.length)
                 handJSON = string(abi.encodePacked(handJSON, ", "));
         }
     }
 
     function getSizeOfHand(address player) view returns(uint size) {
-        return Players[player].cards.length;
+        return Players[player].handSize;
     }
 
     function getBoard() public view returns (string boardState) {
@@ -478,7 +500,7 @@ contract RISK {
                 else
                     boardState = string(abi.encodePacked(boardState,"}"));
             }
-            if(j == 5)
+            if(cont == 5)
                 boardState = string(abi.encodePacked(boardState,"}"));
             else
                 boardState = string(abi.encodePacked(boardState,"},"));
@@ -487,7 +509,7 @@ contract RISK {
         // config segment
         boardState = string(abi.encodePacked(boardState,"},"));
         boardState = string(abi.encodePacked(boardState,"config:{"));
-//        boardState = string(abi.encodePacked(boardState,"turn: ", currentPlayer, "phase: ", getStatusIntValue(currentPlayer)));
+        //        boardState = string(abi.encodePacked(boardState,"turn: ", currentPlayer, "phase: ", getStatusIntValue(currentPlayer)));
         boardState = string(abi.encodePacked(boardState,"turn: ", currentPlayer, "phase: ", uint(Players[currentPlayer].status)));
         boardState = string(abi.encodePacked(boardState, "opponents: ", getCurrentPlayerOpponents(currentPlayer)));
         boardState = string(abi.encodePacked(boardState,"},"));
