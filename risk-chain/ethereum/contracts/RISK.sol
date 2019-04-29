@@ -170,12 +170,12 @@ contract RISK {
         bool victory = false; // only true if the attacker won once, thus will draw a risk card
         require(Players[msg.sender].status == Status.Attacking, "You can't attack right now!");
         for(uint i=0; i < input.length; i+=3) {
-            if(Attack(input[i], input[i+1], input[i+2], Seed))
+            if(Attack(input[i], input[i+1], input[i+2]))
                 victory = true;
         }
         // You can only ever have at most 6 cards at a time
         if(victory && Players[msg.sender].handSize <= 5 && DrawPile.length > 0)
-            drawCards(msg.sender, Seed);
+            drawCards(msg.sender);
         Players[msg.sender].status = Status.Transferring;
         return true;
     }
