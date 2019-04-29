@@ -12,9 +12,10 @@ contract RISK {
         Status status;
         uint index;
         uint armyIncome;
-        uint tempArmyIncome; // income that comes from cards played and only applies to that turn
+        uint tempArmyIncome;
+        uint armyIncomeBonus;
         uint handSize;
-        uint[] ownedRegions;
+        uint numOwnedRegions;
         mapping(uint => Card) hand;
     }
 
@@ -45,7 +46,6 @@ contract RISK {
     mapping(uint => Continent) Continents;
     mapping(uint => Region) Regions;
     Card[] DrawPile;
-    uint[] listOwn;
     address[] PlayerAddrs;
     uint[] bonus = [3,7,2,5,5,2];
     uint[] numRegions = [6,12,4,7,9,4];
@@ -76,10 +76,10 @@ contract RISK {
             PlayerAddrs[pli] = players[pli];
             if(names.length != 0) {
                 string memory currName = names[pli];
-                Players[PlayerAddrs[pli]] = Player(currName, Status.Waiting, pli, initIncome, 0, 0, listOwn);
+                Players[PlayerAddrs[pli]] = Player(currName, Status.Waiting, pli, initIncome, 0, 0, 0, 0);
             }
             else
-                Players[PlayerAddrs[pli]] = Player(string(abi.encodePacked("player", pli+1)), Status.Waiting, pli, initIncome, 0, 0, listOwn);
+                Players[PlayerAddrs[pli]] = Player(string(abi.encodePacked("player", pli+1)), Status.Waiting, pli, initIncome, 0, 0, 0, 0);
         }
         // set the first player turn status to placing
         Players[PlayerAddrs[0]].status = Status.Placing;
@@ -97,7 +97,7 @@ contract RISK {
                 }
                 Regions[j+totalOffset] = Region(PlayerAddrs[offsetIndex%PlayerAddrs.length],j+totalOffset,1,i,numAdjList[j+totalOffset],currAdjInds);
                 Players[PlayerAddrs[offsetIndex%PlayerAddrs.length]].armyIncome -= 1; // this player has placed a troop
-                Players[PlayerAddrs[offsetIndex%PlayerAddrs.length]].ownedRegions.push(j+totalOffset);
+                Players[PlayerAddrs[offsetIndex%PlayerAddrs.length]].numOwnedRegions++;
                 // Initialize the region's card and add it to the draw pile (list) there are 42 cards, one for each region
                 DrawPile[j+totalOffset+2] = Card(j+totalOffset,i,ArmyType(j+totalOffset%3));
             }
@@ -118,10 +118,13 @@ contract RISK {
     function PlaceTroopsDriver(uint[] input) public returns(bool success) {
         success = false; // Only return true if the function has finished
         require(Players[msg.sender].status == Status.Placing, "You can't place armies right now!");
+        // get the player income
+        getPlayerIncome(msg.sender);
         for(uint i=0; i < input.length; i+=2) {
             if(!PlaceTroops(input[i], input[i+1]))
                 return false;
         }
+        Players[msg.sender].armyIncome = 0; //placement is all done, set the income back to 0 to be re-calculated
         Players[msg.sender].status = Status.Attacking;
         return true;
     }
@@ -170,12 +173,12 @@ contract RISK {
         bool victory = false; // only true if the attacker won once, thus will draw a risk card
         require(Players[msg.sender].status == Status.Attacking, "You can't attack right now!");
         for(uint i=0; i < input.length; i+=3) {
-            if(Attack(input[i], input[i+1], input[i+2], Seed))
+            if(Attack(input[i], input[i+1], input[i+2]))
                 victory = true;
         }
         // You can only ever have at most 6 cards at a time
         if(victory && Players[msg.sender].handSize <= 5 && DrawPile.length > 0)
-            drawCards(msg.sender, Seed);
+            drawCards(msg.sender);
         Players[msg.sender].status = Status.Transferring;
         return true;
     }
@@ -261,9 +264,13 @@ contract RISK {
                 attackerWins = true;
         }
         if(attackerWins) {
-            //TODO impliment checking if defender is still alive and update it appropriatly
+            address def = Regions[toLoc].owner;
+            if(Players[def].numOwnedRegions-- <= 0)
+                Players[def].status = Status.Dead;
             Regions[toLoc].numArmies = numArmies; // remaining attacker armies are transfered to the toRegion
+            Players[msg.sender].numOwnedRegions++;
             Regions[toLoc].owner = msg.sender; // ownership is transfered to the attacker
+            checkContinentOwnership(msg.sender, def, toLoc); // check if the attacker now owns the continent, and if the defender owned it, it doesn't anymore
             victory = true;
         }
         // defender wins
@@ -291,6 +298,20 @@ contract RISK {
     }
 
     // Internal Helper Functions
+
+    function checkContinentOwnership(address attacker, address defender, uint region) internal {
+        if(Continents[Regions[region].continent].owner == defender) {
+            Continents[Regions[region].continent].owner = 0;
+            Players[defender].armyIncomeBonus -= Continents[Regions[region].continent].bonus;
+        }
+        uint[] currReg = Continents[Regions[region].continent].Regions;
+        for(uint i=0; i<currReg.length; ++i)
+            if(Regions[currReg[i]].owner != attacker)
+                return;
+        // if this point hits then all the regions in the continent are owned by the player
+        Continents[Regions[region].continent].owner = attacker;
+        Players[defender].armyIncomeBonus += Continents[Regions[region].continent].bonus;
+    }
 
     /* Check the logic if the cards can reward an amount of army income */
     function checkCards(Card[] cards, address player) internal view returns(bool success) {
@@ -452,6 +473,20 @@ contract RISK {
 
     // Public View Functions
 
+    /* Get the income for a given player, also if there is bonuses to be applied then apply them and assign it to the map*/
+    function getPlayerIncome(address player) public returns(uint income) {
+        Player currPlayer = Players[player];
+        income = currPlayer.armyIncome; // this is important to keep the initial income left over from placement
+        if(currPlayer.tempArmyIncome > 0 || currPlayer.armyIncomeBonus > 0) {
+            income += currPlayer.tempArmyIncome + currPlayer.armyIncomeBonus;
+            Players[player].tempArmyIncome = 0;
+        }
+        // how you calculate income based off of controlled regions
+        income += currPlayer.numOwnedRegions/3; // this will truncate down to a int
+        return income;
+    }
+
+    /* Get the player that currently has the placing, attacking, or transferring status*/
     function getCurrentPlayer() public view returns (address player) {
         for(uint i = 0; i < PlayerAddrs.length; ++i) {
             Status currStatus = Players[PlayerAddrs[i]].status;
@@ -461,7 +496,7 @@ contract RISK {
         return 0;
     }
 
-    //gets the opponents of the current players turn and returns them as a string in the form [player2, player3]
+    /* Gets the opponents of the current players turn and returns them as a string in the form [player2, player3] */
     function getCurrentPlayerOpponents(address currentPlayer) public view returns (string opponents) {
         opponents = "[";
         for(uint i=0; i <PlayerAddrs.length; ++i) {
@@ -475,6 +510,7 @@ contract RISK {
         return opponents;
     }
 
+    /* Return the hand of the given player, returns it in JSON string formatting */
     function getHand(address player) public view returns(string handJSON) {
         handJSON = "";
         Player playerHand = Players[player];
@@ -489,11 +525,13 @@ contract RISK {
         }
     }
 
+    /* Returns the size of the given players hand (should be less than 6) */
     function getSizeOfHand(address player) view returns(uint size) {
         return Players[player].handSize;
     }
 
-    function getBoard() public view returns (string boardState) {
+    /* Returns the entire game state in JSON formatting, called by the client to update the state */
+    function getGameState() public view returns (string boardState) {
         boardState = "";
         // board segment
         boardState = string(abi.encodePacked(boardState,"{", "board: {"));
