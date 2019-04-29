@@ -40,7 +40,7 @@ contract RISK {
     }
 
     uint tradeInVal;
-
+    uint Seed;
     mapping(address => Player) Players;
     mapping(uint => Continent) Continents;
     mapping(uint => Region) Regions;
@@ -60,10 +60,18 @@ contract RISK {
     /*
     * precondition: if names is defined, players and names MUST be the same length
     */
-    function RISK(address[] players, string[] names, bytes32 seed) public {
+    function RISK(address[] players, string[] names, uint seed) public {
         uint totalOffset = 0;
         uint adjOffset = 0;
         uint initIncome = 50 - 5 * players.length; // the appropriate start of income depending on number of players
+
+        if(seed == 0) {
+            seed = uint(keccak256(block.blockhash(block.number-1), uint(keccak256(players)), now));
+            Seed = seed;
+        }
+        else {
+            Seed = seed;
+        }
         for(uint pli = 0; pli < players.length; ++pli) {
             PlayerAddrs[pli] = players[pli];
             if(names.length != 0) {
