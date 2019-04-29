@@ -12,7 +12,7 @@ contract RISK {
         Status status;
         uint index;
         uint armyIncome;
-        uint tempArmyIncome; 
+        uint tempArmyIncome;
         uint armyIncomeBonus;
         uint handSize;
         uint numOwnedRegions;
@@ -473,6 +473,7 @@ contract RISK {
 
     // Public View Functions
 
+    /* Get the income for a given player, also if there is bonuses to be applied then apply them and assign it to the map*/
     function getPlayerIncome(address player) public returns(uint income) {
         Player currPlayer = Players[player];
         income = currPlayer.armyIncome; // this is important to keep the initial income left over from placement
@@ -485,6 +486,7 @@ contract RISK {
         return income;
     }
 
+    /* Get the player that currently has the placing, attacking, or transferring status*/
     function getCurrentPlayer() public view returns (address player) {
         for(uint i = 0; i < PlayerAddrs.length; ++i) {
             Status currStatus = Players[PlayerAddrs[i]].status;
@@ -494,7 +496,7 @@ contract RISK {
         return 0;
     }
 
-    //gets the opponents of the current players turn and returns them as a string in the form [player2, player3]
+    /* Gets the opponents of the current players turn and returns them as a string in the form [player2, player3] */
     function getCurrentPlayerOpponents(address currentPlayer) public view returns (string opponents) {
         opponents = "[";
         for(uint i=0; i <PlayerAddrs.length; ++i) {
@@ -508,6 +510,7 @@ contract RISK {
         return opponents;
     }
 
+    /* Return the hand of the given player, returns it in JSON string formatting */
     function getHand(address player) public view returns(string handJSON) {
         handJSON = "";
         Player playerHand = Players[player];
@@ -522,11 +525,13 @@ contract RISK {
         }
     }
 
+    /* Returns the size of the given players hand (should be less than 6) */
     function getSizeOfHand(address player) view returns(uint size) {
         return Players[player].handSize;
     }
 
-    function getBoard() public view returns (string boardState) {
+    /* Returns the entire game state in JSON formatting, called by the client to update the state */
+    function getGameState() public view returns (string boardState) {
         boardState = "";
         // board segment
         boardState = string(abi.encodePacked(boardState,"{", "board: {"));
