@@ -33,14 +33,25 @@ class Preview extends Component {
 
     render() {
         //this.state.register(this.chooseCountryForPreview);
-
+        let CountryOffsetY = "150c";
+        switch (this.state.name) {
+            case "Argentina": CountryOffsetY = "50c";
+            case "Greenland": CountryOffsetY = "175c";
+            case "Ukraine": CountryOffsetY = "225c";
+            case "Siberia": CountryOffsetY = "225c";
+            case "South Africa": CountryOffsetY = "25c";
+            case "North Africa": CountryOffsetY = "225c";
+        }
+        if (this.state.name == "Argentina") {
+            CountryOffsetY = "50c";
+        }
         //Preview.normalizeCountry(this.state.path);
 
         return (
             <div>
                 <svg xmlns="http://www.w3.org/2000/svg"
                      layout-css="margin: 20em;" height="250" >
-                <path className='outline' id="hilite" fill="green" strokeWidth="8" stroke="black" opacity="1" d={(this.state.path).replace(/\b[a-zA-Z,0-9]*c/g, "150c") } />
+                <path className='outline' id="hilite" fill="green" strokeWidth="8" stroke="black" opacity="1" d={(this.state.path).replace(/\b[a-zA-Z,0-9]*c/g, CountryOffsetY) } />
 
 
                 </svg>

@@ -4,7 +4,7 @@ const HDWalletProvider = require("truffle-hdwallet-provider");
 const Web3 = require("web3");
 
 const compiledRiskChain = require("./build/risk-chain.json");
-console.log(compiledTrojanSecret.interface);
+console.log(compiledRiskChain.interface);
 console.log("Copy this ABI into the ABI json variable in file RiskContract.js");
 
 const provider = new HDWalletProvider(
