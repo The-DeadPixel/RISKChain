@@ -18,6 +18,7 @@ class App extends Component {
       phase: 0,
       hilite: '',
       troopSelection: 'Selected Troops',
+      remainingTroops: 6,
       pendingMove: [],
       setFromPreview: console.log,
       setToPreview: console.log
@@ -37,6 +38,7 @@ class App extends Component {
     this.registerFrom = this.registerFrom.bind(this);
     this.registerTo = this.registerTo.bind(this);
     this.getScrollBox = this.getScrollBox.bind(this);
+    this.getSlider = this.getSlider.bind(this);
   }
 
   selectCountry(selection) {
@@ -304,6 +306,7 @@ class App extends Component {
   }
   async nextPhase(){
     //Send Data...
+    let troops = 0;
     if(this.state.phase ===0) {
       console.log('Need to call troop placement');
       //Need to bake parameters for Place Troops Driver here
@@ -319,9 +322,12 @@ class App extends Component {
       console.log('Need to call troop movement function');
       //Need to bake parameters for TrfArmies Driver Here
      // await RiskContract.methods.TrfArmiesDriver().call();
+      //This is where we need to set our remaining troops for the upcoming turn
+      troops = 10;
 
     }else{
       console.log('Found ourselves in some inconsistant state, check nextPhase()');
+
     }
     // We also need to make a call on getBoard and update the board here when we move to the next phase.
 
@@ -329,7 +335,7 @@ class App extends Component {
      *     var Board = await RiskContract.methods.getBoard().call();
      *      set State on the correct component to Board... might have to plumb in a reference...
      */
-    this.setState({ phase: (this.state.phase+1)%3 , pendingMove: []});
+    this.setState({ phase: (this.state.phase+1)%3 , pendingMove: [], remainingTroops: troops});
   }
   getControllTitle(){
     return (this.state.phase === 0 ? 'Placement Phase' : ( this.state.phase ===1 ? 'Attack Phase': 'Movement Phase' ) );
@@ -343,20 +349,25 @@ class App extends Component {
   }
   addButton() {
     // add From, To, Troops to list, based on phase.
-    if(this.state.troopSelection.localeCompare('Selected Troops')===0 || this.state.troopSelection <= 0){
+    if((this.state.troopSelection.localeCompare('Selected Troops')===0 || this.state.troopSelection <= 0) && this.state.phase == 0){
       console.log('No troops selected yet');
+      return;
+    }
+    let troops = this.state.troopSelection;
+    if(this.state.phase == 0 && this.state.remainingTroops < troops) {
+      troops = this.state.remainingTroops;
     }
 
-    let update = {};
+    let update = [];
     let tmpMoves = this.state.pendingMove;
     console.log(tmpMoves);
     if(this.state.phase == 0) {
-       update =  tmpMoves.push({ type: this.state.phase, country: this.state.from, troops: this.state.troopSelection});
+       update =  tmpMoves.push({ type: this.state.phase, country: this.state.from, troops: troops});
     } else {
-      update =  tmpMoves.push({ type: this.state.phase, from: this.state.from, to: this.state.to, troops: this.state.troopSelection });
+      update =  tmpMoves.push({ type: this.state.phase, from: this.state.from, to: this.state.to, troops: troops });
     }
     console.log(update);
-    this.setState({ pendingMove: tmpMoves }, () => {console.log(this.state)});
+    this.setState({ pendingMove: tmpMoves, remainingTroops: this.state.remainingTroops - troops }, () => {console.log(this.state)});
   }
   registerFrom(func) {
     this.setState({ setFromPreview: func});
@@ -365,17 +376,16 @@ class App extends Component {
     this.setState({ setToPreview: func});
   }
   getPreview() {
+    let preViewTag;
     if(this.state.phase === 0 ){
-      return (<Preview name={this.state.from} type={'From'} register={this.registerFrom}/>);
+      preViewTag = (<div><p>{'Remaining Reinforcements: '+this.state.remainingTroops}</p><Preview name={this.state.from} type={'Reinforce'} register={this.registerFrom}/></div>);
+    }else{
+      preViewTag = (<div><Preview name={this.state.from} type={'From'} register={this.registerFrom} /><Preview name={this.state.to} type={'To'} register={this.registerTo} /></div>);
     }
-    return (<div>
-        <Preview name={this.state.from} type={'From'} register={this.registerFrom} />
-        <Preview name={this.state.to} type={'To'} register={this.registerTo} />
-        </div>
-  );
+    return preViewTag;
   }
   getScrollBox() {
-    let boxTag;
+    let boxTag='';
 
     this.state.pendingMove.forEach((element) => {
       if(element.type == 0){
@@ -392,6 +402,12 @@ class App extends Component {
     return boxTag;
 
   }
+  getSlider() {
+    return (<div><p>{0}</p>
+        <input type={'range'} min={0} max={this.state.phase == 0 ? this.state.remainingTroops : this.state.troops} onChange={this.sliderUpdate}/>
+    <p>{this.state.phase == 0 ? this.state.remainingTroops : this.state.troops}</p></div>
+  );
+  }
   render() {
     //console.log(this.state.hilite);
 
@@ -406,9 +422,7 @@ class App extends Component {
               {this.getPreview()}
             </tr>
             <tr>
-              <p>0</p>
-              <input type={'range'} min={'0'} max={this.state.troops-1} onChange={this.sliderUpdate}/>
-              <p>{this.state.troops -1}</p>
+              {this.getSlider()}
             </tr>
             <tr>
               <button onClick={this.addButton}>Add {this.state.troopSelection}</button>
