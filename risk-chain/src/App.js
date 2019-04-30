@@ -46,7 +46,7 @@ class App extends Component {
     console.log(selection);
     if(!this.state.type){
       this.state.setFromPreview(country, 'PATH');
-      this.setState({from:country, troops:selection.troops, type: this.state.phase !==0 ? !this.state.type: this.state.type }, () => {
+      this.setState({from:country, troops:selection.troops, type: this.state.phase !=0 ? !this.state.type: this.state.type }, () => {
         console.log('from country state CB:', this.state);
       });
     }else{
@@ -370,15 +370,18 @@ class App extends Component {
     this.setState({ pendingMove: tmpMoves, remainingTroops: this.state.remainingTroops - troops }, () => {console.log(this.state)});
   }
   registerFrom(func) {
+    console.log('register from');
     this.setState({ setFromPreview: func});
   }
   registerTo(func) {
+    console.log('register to');
+
     this.setState({ setToPreview: func});
   }
   getPreview() {
     let preViewTag;
     if(this.state.phase === 0 ){
-      preViewTag = (<div><p>{'Remaining Reinforcements: '+this.state.remainingTroops}</p><Preview name={this.state.from} type={'Reinforce'} register={this.registerFrom}/></div>);
+       return (<div><p>{'Remaining Reinforcements: '+this.state.remainingTroops}</p><Preview name={this.state.from} type={'To'} register={this.registerFrom}/></div>);
     }else{
       preViewTag = (<div><Preview name={this.state.from} type={'From'} register={this.registerFrom} /><Preview name={this.state.to} type={'To'} register={this.registerTo} /></div>);
     }
