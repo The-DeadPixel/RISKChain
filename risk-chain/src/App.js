@@ -338,7 +338,7 @@ class App extends Component {
     this.setState({ phase: (this.state.phase+1)%3 , pendingMove: [], remainingTroops: troops});
   }
   getControllTitle(){
-    return (this.state.phase === 0 ? 'Placement Phase' : ( this.state.phase ===1 ? 'Attack Phase': 'Movement Phase' ) );
+    return (this.state.phase === 0 ? 'Placement Phase\n'+'Remaining Reinforcements: '+this.state.remainingTroops : ( this.state.phase ===1 ? 'Attack Phase': 'Movement Phase' ) );
   }
   getSubmitButton(){
     return (<button onClick={(this.state.phase === 0 ? this.nextPhase : ( this.state.phase ===1 ? this.nextPhase: this.nextPhase ) )} > {(this.state.phase === 0 ? 'Deploy' : ( this.state.phase ===1 ? 'Launch Attack': 'Move Reinforcements' ) )}</button>);
@@ -379,13 +379,11 @@ class App extends Component {
     this.setState({ setToPreview: func});
   }
   getPreview() {
-    let preViewTag;
     if(this.state.phase === 0 ){
-       return (<div><p>{'Remaining Reinforcements: '+this.state.remainingTroops}</p><Preview name={this.state.from} type={'To'} register={this.registerFrom}/></div>);
-    }else{
-      preViewTag = (<div><Preview name={this.state.from} type={'From'} register={this.registerFrom} /><Preview name={this.state.to} type={'To'} register={this.registerTo} /></div>);
+       return (<Preview name={this.state.from} type={'From'} register={this.registerFrom}/>);
     }
-    return preViewTag;
+    return (<div><Preview name={this.state.from} type={'From'} register={this.registerFrom} /><Preview name={this.state.to} type={'To'} register={this.registerTo} /></div>);
+
   }
   getScrollBox() {
     let boxTag='';
