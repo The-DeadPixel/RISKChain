@@ -5,6 +5,7 @@ import Board from './components/Board';
 import './App.css';
 import Controller from "./components/Controller";
 import Preview from "./components/Preview";
+import RiskContract from "./RiskContract";
 
 class App extends Component {
   constructor(props) {
@@ -66,6 +67,13 @@ class App extends Component {
     this.setState({ hilite: lines }, this.render);
   }
   getTestBoard(){
+    /**
+    var Board = await RiskContract.methods.getBoard().call();
+    // Starting to plumb in some contract interaction...
+    if( 0 ) {
+      return Board;
+    }
+     */
     var player1 = '0xSEAN';
     var player2 = '0xLUKE';
     var player3 = '0xDAVE';
@@ -294,8 +302,33 @@ class App extends Component {
       }
     }
   }
-  nextPhase(){
+  async nextPhase(){
     //Send Data...
+    if(this.state.phase ===0) {
+      console.log('Need to call troop placement');
+      //Need to bake parameters for Place Troops Driver here
+      // await RiskContract.methods.PlaceTroopsDriver().call();
+
+
+    }else if( this.state.phase === 1) {
+      console.log('Need to call Attack function');
+      //Need to bake parameters for Attack Driver Here
+     // await RiskContract.methods.AttackDriver().call();
+
+    }else if( this.state.phase === 2) {
+      console.log('Need to call troop movement function');
+      //Need to bake parameters for TrfArmies Driver Here
+     // await RiskContract.methods.TrfArmiesDriver().call();
+
+    }else{
+      console.log('Found ourselves in some inconsistant state, check nextPhase()');
+    }
+    // We also need to make a call on getBoard and update the board here when we move to the next phase.
+
+    /**
+     *     var Board = await RiskContract.methods.getBoard().call();
+     *      set State on the correct component to Board... might have to plumb in a reference...
+     */
     this.setState({ phase: (this.state.phase+1)%3 , pendingMove: []});
   }
   getControllTitle(){
