@@ -21,7 +21,8 @@ class App extends Component {
       remainingTroops: 6,
       pendingMove: [],
       setFromPreview: console.log,
-      setToPreview: console.log
+      setToPreview: console.log,
+      board: this.getTestBoard()
     };
     this.selectCountry = this.selectCountry.bind(this);
     this.selectFrom = this.selectFrom.bind(this);
@@ -39,17 +40,40 @@ class App extends Component {
     this.registerTo = this.registerTo.bind(this);
     this.getScrollBox = this.getScrollBox.bind(this);
     this.getSlider = this.getSlider.bind(this);
+    this.clearMoves = this.clearMoves.bind(this);
   }
-
+  clearMoves(){
+    let troops = 0;
+    if(this.state.phase == 0) {
+      this.state.pendingMove.forEach((e) => troops += parseInt(e.troops));
+    }
+    this.setState({pendingMove: [], remainingTroops: this.state.remainingTroops + troops });
+  }
   selectCountry(selection) {
     let country = selection.country;
     console.log(selection);
     if(!this.state.type){
+      console.log(selection.owner, this.state.board.config.turn);
+      if(selection.owner != this.state.board.config.turn){
+        return;
+      }
       this.state.setFromPreview(country, 'PATH');
       this.setState({from:country, troops:selection.troops, type: this.state.phase !=0 ? !this.state.type: this.state.type }, () => {
         console.log('from country state CB:', this.state);
       });
     }else{
+      if((selection.owner == this.state.board.config.turn) && this.state.phase == 1){
+        return;
+      }else if((selection.owner != this.state.board.config.turn) && this.state.phase == 2){
+        return;
+      }
+      /**
+       * if (this.state.to.isAdjacent(this.state.from)) {  // Still need to implement.
+       *     return;
+       * }
+       *
+       *
+       */
       this.state.setToPreview(country, 'PATH');
       this.setState({to:country, type: !this.state.type }, () => {
         console.log('to country state CB:',this.state);
@@ -349,6 +373,11 @@ class App extends Component {
   }
   addButton() {
     // add From, To, Troops to list, based on phase.
+    if(this.state.phase ==0 && this.state.from.localeCompare('Select a Country') ==0) {
+      return;
+    }else if(this.state.phase !=0 && (this.state.from.localeCompare('Select a Country') ==0 || this.state.to.localeCompare('Select a Country') ==0)){
+      return;
+    }
     if((this.state.troopSelection.localeCompare('Selected Troops')===0 || this.state.troopSelection <= 0) && this.state.phase == 0){
       console.log('No troops selected yet');
       return;
@@ -356,6 +385,9 @@ class App extends Component {
     let troops = this.state.troopSelection;
     if(this.state.phase == 0 && this.state.remainingTroops < troops) {
       troops = this.state.remainingTroops;
+    }
+    if( !(troops >0)){
+      return;
     }
 
     let update = [];
@@ -366,6 +398,7 @@ class App extends Component {
     } else {
       update =  tmpMoves.push({ type: this.state.phase, from: this.state.from, to: this.state.to, troops: troops });
     }
+    //Need to subtract troops away from this.state.from on the board.
     console.log(update);
     this.setState({ pendingMove: tmpMoves, remainingTroops: this.state.remainingTroops - troops }, () => {console.log(this.state)});
   }
@@ -380,7 +413,7 @@ class App extends Component {
   }
   getPreview() {
     if(this.state.phase === 0 ){
-       return (<Preview name={this.state.from} type={'From'} register={this.registerFrom}/>);
+       return (<Preview name={this.state.from} type={'Reinforce'} register={this.registerFrom}/>);
     }
     return (<div><Preview name={this.state.from} type={'From'} register={this.registerFrom} /><Preview name={this.state.to} type={'To'} register={this.registerTo} /></div>);
 
@@ -405,8 +438,8 @@ class App extends Component {
   }
   getSlider() {
     return (<div><p>{0}</p>
-        <input type={'range'} min={0} max={this.state.phase == 0 ? this.state.remainingTroops : this.state.troops} onChange={this.sliderUpdate}/>
-    <p>{this.state.phase == 0 ? this.state.remainingTroops : this.state.troops}</p></div>
+        <input type={'range'} min={0} max={this.state.phase == 0 ? this.state.remainingTroops : this.state.troops-1} onChange={this.sliderUpdate}/>
+    <p>{this.state.phase == 0 ? this.state.remainingTroops : this.state.troops-1}</p></div>
   );
   }
   render() {
@@ -427,6 +460,7 @@ class App extends Component {
             </tr>
             <tr>
               <button onClick={this.addButton}>Add {this.state.troopSelection}</button>
+              <button onClick={this.clearMoves}>Clear</button>
             </tr>
             <tr className={'display-linebreak'}>
               {this.getScrollBox()}
@@ -436,7 +470,7 @@ class App extends Component {
             </tr>
           </td>
           <td width="80%" height="100%">
-        <Board select={this.selectCountry} board={this.getTestBoard()} makeSelect={this.makeSelect} selections={this.state.hilite} />
+        <Board select={this.selectCountry} board={this.state.board} makeSelect={this.makeSelect} selections={this.state.hilite} />
           </td>
         </table>
       </div>
