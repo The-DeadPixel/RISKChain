@@ -7,10 +7,10 @@ const compiledRiskChain = require("./build/risk-chain.json");
 console.log(compiledTrojanSecret.interface);
 console.log("Copy this ABI into the ABI json variable in file RiskContract.js");
 
-
 const provider = new HDWalletProvider(
     "------ insert 15 word mneumonic here -----------",
     "rinkeby.infura.io/v3/...---insert your rinkeby account address here ---------"
+
 );
 
 const web3 = new Web3(provider);
@@ -32,4 +32,5 @@ const deploy = async () => {
 };
 
 deploy();
+
 
