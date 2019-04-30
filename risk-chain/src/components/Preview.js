@@ -27,6 +27,7 @@ class Preview extends Component {
 	    }
 
     chooseCountryForPreview(name, path) {
+        console.log(this.state.type, name);
         this.setState({ name: name, path:  document.getElementById(name).getAttribute('d').replace(/\bM[A-Za-z0-9]*/g, "M100 ")})
     }
 
