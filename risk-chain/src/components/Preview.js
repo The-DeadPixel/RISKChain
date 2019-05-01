@@ -35,16 +35,27 @@ class Preview extends Component {
     render() {
         //this.state.register(this.chooseCountryForPreview);
         let CountryOffsetY = "150c";
-        switch (this.state.name) {
-            case "Argentina": CountryOffsetY = "50c";
-            case "Greenland": CountryOffsetY = "175c";
-            case "Ukraine": CountryOffsetY = "225c";
-            case "Siberia": CountryOffsetY = "225c";
-            case "South Africa": CountryOffsetY = "25c";
-            case "North Africa": CountryOffsetY = "225c";
+        let n = this.state.name;
+        switch (n) {
+            case 'Argentina': {CountryOffsetY = "50c";
+                break;
+            }
+            case 'Greenland': {CountryOffsetY = "175c";
+                break;
         }
-        if (this.state.name == "Argentina") {
-            CountryOffsetY = "50c";
+            case 'Ukraine': {CountryOffsetY = "225c";
+                break;
+            }
+            case 'Siberia': {CountryOffsetY = "225c";
+                break;
+            }
+            case 'South Africa': {CountryOffsetY = "25c";
+                break;
+            }
+            case 'North Africa': {CountryOffsetY = "225c";
+                break;
+            }
+            default: CountryOffsetY = "150c";
         }
         //Preview.normalizeCountry(this.state.path);
 
