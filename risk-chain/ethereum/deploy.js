@@ -3,13 +3,13 @@
 const HDWalletProvider = require("truffle-hdwallet-provider");
 const Web3 = require("web3");
 
-const compiledRiskChain = require("./build/risk-chain.json");
+const compiledRiskChain = require("./build/risk-chain.json"); // We need to add this file?
 console.log(compiledRiskChain.interface);
 console.log("Copy this ABI into the ABI json variable in file RiskContract.js");
 
 const provider = new HDWalletProvider(
-    "------ insert 15 word mneumonic here -----------",
-    "rinkeby.infura.io/v3/...---insert your rinkeby account address here ---------"
+    "draw donor adult scissors pulp document enrich supreme skull order pen oak",
+    "rinkeby.infura.io/v3/24bcc8ff85524dca96beda03d5556d79" // infura address endpoint
 
 );
 
@@ -32,5 +32,4 @@ const deploy = async () => {
 };
 
 deploy();
-
 
