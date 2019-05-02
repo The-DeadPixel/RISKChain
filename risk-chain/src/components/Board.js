@@ -27,7 +27,6 @@ class Board extends Component {
             console.log('Not Country');
             country = event.target.getAttribute('data');
             if( ! country) {
-
                 return;
             }
         }else{
