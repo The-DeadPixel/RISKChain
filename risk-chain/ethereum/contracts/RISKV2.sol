@@ -25,7 +25,7 @@ contract RISK {
         uint numArmies;
         uint continent;
     }
-    
+
     uint currPlayer;
     uint initIncome;
     uint totalOffset;
@@ -38,6 +38,9 @@ contract RISK {
     uint[] numRegions = [6,12,4,7,9,4];
     uint[] atckDie;
     uint[] defDie; // for storing dice roll values
+
+
+    // ["0xca35b7d915458ef540ade6068dfe2f44e8fa733c", "0x14723a09acff6d2a60dcdf7aa4aff308fddc160c"],"123"
     /*
     * Constructor: setup string is a JSON that will populate the players and map owners
     * precondition: if names is defined, players and names MUST be the same length
@@ -48,14 +51,14 @@ contract RISK {
         //     seed = uint(keccak256(block.blockhash(block.number-1), now));
         //     Seed = seed;
         // }
-        // else 
+        // else
         Seed = seed;
     }
-    
+
     function() payable{}
 
     // Public Phase Functions
-    
+
     function addPlayer(address player) public {
         PlayerAddrs.push(player);
         Players[player] = Player(Status.Waiting, currPlayer++, 0, 0);
@@ -63,26 +66,26 @@ contract RISK {
         if(PlayerAddrs.length-1 == 0)
             Players[player].status = Status.Placing;
     }
-    
+
     function createContinents() {
         for(uint i=0; i< 6; ++i) { //for continents
-            // empty array assigned to the size of the 
+            // empty array assigned to the size of the
             uint[] memory regionSizeArray = new uint[](numRegions[i]);
             Continents[i] = Continent(0,bonus[i],regionSizeArray);
         }
     }
-    
+
     function createRegions() {
         for(uint index=0; index<6; index++) {
-        uint offsetIndex = 0;
-        for(uint j=0; j < numRegions[index]; ++j) { //for each region in this continent
-            offsetIndex = j+totalOffset;
-            Regions[j+totalOffset] = Region(0,j,1,index);
-        }
-        totalOffset += numRegions[index]; // Increase the offset
+            uint offsetIndex = 0;
+            for(uint j=0; j < numRegions[index]; ++j) { //for each region in this continent
+                offsetIndex = j+totalOffset;
+                Regions[j+totalOffset] = Region(0,j,1,index);
+            }
+            totalOffset += numRegions[index]; // Increase the offset
         }
     }
-    
+
     function assignPlayers() {
         for(uint i=0; i<42; i++) {
             Regions[i].owner = PlayerAddrs[i%PlayerAddrs.length];
@@ -322,7 +325,7 @@ contract RISK {
     }
 
     // Public View Functions
-    
+
 
     /* Get the income for a given player, also if there is bonuses to be applied then apply them and assign it to the map*/
     function getPlayerIncome(address player) public returns(uint income) {
@@ -335,11 +338,11 @@ contract RISK {
         income += currPlayer.numOwnedRegions/3; // this will truncate down to a int
         return income;
     }
-    
+
     function addressToString(address _addr) public pure returns(string) {
         bytes32 value = bytes32(uint256(_addr));
         bytes memory alphabet = "0123456789abcdef";
-    
+
         bytes memory str = new bytes(42);
         str[0] = '0';
         str[1] = 'x';
@@ -349,7 +352,7 @@ contract RISK {
         }
         return string(str);
     }
-    
+
     function uintToString(uint i) internal pure returns (string memory uintAsString) {
         if (i == 0) {
             return "0";
@@ -384,7 +387,7 @@ contract RISK {
         opponents = "[";
         for(uint i=0; i <PlayerAddrs.length; ++i) {
             if (currentPlayer != PlayerAddrs[i]) {
-                opponents = string(abi.encodePacked(opponents, '"',addressToString(PlayerAddrs[i]),'"'));
+                opponents = string(abi.encodePacked(opponents, addressToString(PlayerAddrs[i]),"","",""));
                 if(i+1 < PlayerAddrs.length)
                     opponents = string(abi.encodePacked(opponents, ", ","","",""));
             }
@@ -392,7 +395,7 @@ contract RISK {
         opponents = string(abi.encodePacked(opponents,"]","",""));
         return opponents;
     }
-    
+
     /* Gets the opponents of the current players turn and returns them as a string in the form [player2, player3] */
     function getAllPlayers() public view returns (string opponents) {
         opponents = "[";
@@ -404,18 +407,18 @@ contract RISK {
         opponents = string(abi.encodePacked(opponents,"]","",""));
         return opponents;
     }
-    
+
     /* Returns the entire game state in JSON formatting, called by the client to update the state */
     function getGameState() public view returns (string boardState) {
         boardState = "";
         // board segment
-        boardState = string(abi.encodePacked(boardState,"{", '"board": {',"",""));
+        boardState = string(abi.encodePacked(boardState,"{", "board: {","",""));
         for(uint cont=0; cont<6; ++cont) {
             uint[] currRegions = Continents[cont].Regions;
-            boardState = string(abi.encodePacked(boardState,'"',uintToString(cont),'":{'));
+            boardState = string(abi.encodePacked(boardState,uintToString(cont),":{"));
             for(uint reg = 0; reg < currRegions.length; ++reg) {
                 Region currReg = Regions[currRegions[reg]];
-                boardState = string(abi.encodePacked(boardState,'"',uintToString(reg),'":{','"owner":"', addressToString(currReg.owner), '",', '"troops":"', uintToString(currReg.numArmies),'"'));
+                boardState = string(abi.encodePacked(boardState,uintToString(reg),":{","owner: ", addressToString(currReg.owner), ",", "troops: ", uintToString(currReg.numArmies)));
                 if(reg+1 < currRegions.length)
                     boardState = string(abi.encodePacked(boardState,"},"));
                 else
@@ -428,9 +431,10 @@ contract RISK {
         }
         address currentPlayer = getCurrentPlayer();
         // config segment
-        boardState = string(abi.encodePacked(boardState,"}", '"config":{'));
-        boardState = string(abi.encodePacked(boardState,'"turn":', addressToString(currentPlayer), ',"phase":"', uintToString(uint(Players[currentPlayer].status)),'"'));
-        boardState = string(abi.encodePacked(boardState, ',"opponents":', getCurrentPlayerOpponents(currentPlayer)));
+        boardState = string(abi.encodePacked(boardState,"}, config:{"));
+        //boardState = string(abi.encodePacked(boardState,"turn: ", currentPlayer, "phase: ", getStatusIntValue(currentPlayer)));
+        boardState = string(abi.encodePacked(boardState,"turn: ", addressToString(currentPlayer), ",phase: ", uintToString(uint(Players[currentPlayer].status))));
+        boardState = string(abi.encodePacked(boardState, ",opponents: ", getCurrentPlayerOpponents(currentPlayer)));
         boardState = string(abi.encodePacked(boardState,"}}"));
         return boardState;
     }
