@@ -48,7 +48,11 @@ class App extends Component {
     if(this.state.phase == 0) {
       this.state.pendingMove.forEach((e) => troops += parseInt(e.troops));
     }
-    this.setState({pendingMove: [], remainingTroops: this.state.remainingTroops + troops });
+    this.state.setFromPreview( 0, 'PATH');
+    if(this.state.phase > 0) {
+      this.state.setToPreview( 0, 'PATH');
+    }
+    this.setState({pendingMove: [], remainingTroops: this.state.remainingTroops + troops, from: 'Select a Country', to: 'Select a Country' });
   }
   selectCountry(selection) {
     let country = selection.country;
@@ -59,7 +63,7 @@ class App extends Component {
         return;
       }
       this.state.setFromPreview(country, 'PATH');
-      this.setState({from:country, troops:selection.troops, type: this.state.phase !=0 ? !this.state.type: this.state.type }, () => {
+      this.setState({from:country, troops:selection.troops, troopSelection: this.state.phase? selection.troops-1 : this.state.remainingTroops, type: this.state.phase !=0 ? !this.state.type: this.state.type }, () => {
         console.log('from country state CB:', this.state);
       });
     }else{
@@ -85,6 +89,7 @@ class App extends Component {
       });
     }
    }
+
    isAdjacent(from, to) {
       var countries = document.getElementsByClassName('country');
       var fromAdj = countries[from].getAttribute("adj");
@@ -94,6 +99,7 @@ class App extends Component {
       var adjPath = '['+contNum+','+cuntNum+']'
      return fromAdj.includes(adjPath);
   }
+
   selectFrom(){
     console.log('testFrom.');
     this.setState({type:false}, console.log.bind('selectFrom'));
@@ -358,7 +364,7 @@ class App extends Component {
     }else if(this.state.phase !=0 && (this.state.from.localeCompare('Select a Country') ==0 || this.state.to.localeCompare('Select a Country') ==0)){
       return;
     }
-    if((this.state.troopSelection.localeCompare('Selected Troops')===0 || this.state.troopSelection <= 0) && this.state.phase == 0){
+    if((this.state.troopSelection ==0 || this.state.troopSelection <= 0) && this.state.phase == 0){
       console.log('No troops selected yet');
       return;
     }
@@ -393,7 +399,7 @@ class App extends Component {
   }
   getPreview() {
     if(this.state.phase === 0 ){
-       return (<Preview name={this.state.from} type={'Reinforce'} register={this.registerFrom}/>);
+       return (<Preview className={'preview'} name={this.state.from} type={'Reinforce'} register={this.registerFrom}/>);
     }
     return (<div><Preview name={this.state.from} type={'From'} register={this.registerFrom} /><Preview name={this.state.to} type={'To'} register={this.registerTo} /></div>);
 

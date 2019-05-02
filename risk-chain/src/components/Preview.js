@@ -28,6 +28,10 @@ class Preview extends Component {
 
     chooseCountryForPreview(name, path) {
         console.log(this.state.type, name);
+        if(name == 0){
+            this.setState({name: 'Select a Country', path: 'M100'});
+            return;
+        }
         this.setState({ name: name, path:  document.getElementById(name).getAttribute('d').replace(/\bM[A-Za-z0-9]*/g, "M100 ")})
     }
 
