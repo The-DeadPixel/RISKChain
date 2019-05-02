@@ -41,6 +41,7 @@ class App extends Component {
     this.getScrollBox = this.getScrollBox.bind(this);
     this.getSlider = this.getSlider.bind(this);
     this.clearMoves = this.clearMoves.bind(this);
+    this.isAdjacent = this.isAdjacent.bind(this);
   }
   clearMoves(){
     let troops = 0;
@@ -74,12 +75,25 @@ class App extends Component {
        *
        *
        */
+      console.log(this.isAdjacent(this.state.from, country));
+      if(!this.isAdjacent(this.state.from, country)) {
+        return;
+      }
       this.state.setToPreview(country, 'PATH');
       this.setState({to:country, type: !this.state.type }, () => {
         console.log('to country state CB:',this.state);
       });
     }
    }
+   isAdjacent(from, to) {
+      var countries = document.getElementsByClassName('country');
+      var fromAdj = countries[from].getAttribute("adj");
+      var toCountry = countries[to];
+      var cuntNum = toCountry.getAttribute("name");
+      var contNum = toCountry.parentElement.getAttribute("name");
+      var adjPath = '['+contNum+','+cuntNum+']'
+     return fromAdj.includes(adjPath);
+  }
   selectFrom(){
     console.log('testFrom.');
     this.setState({type:false}, console.log.bind('selectFrom'));
@@ -286,48 +300,14 @@ class App extends Component {
           }
         }
       },
-      config:{
+      config: {
         turn: player1,
         phase: 0,
         opponents: [player2, player3]
-
-      },
-      card:{
-        hand: {
-          0:{
-            continent: 0,
-            country: 4,
-            type: 0
-          },
-          1:{
-            continent: 3,
-            country: 4,
-            type: 0
-          },
-          2:{
-            continent: 0,
-            country: 1,
-            type: 2
-          },
-          3:{
-            continent: 3,
-            country: 3,
-            type: 2
-          },
-          4:{
-            continent: 4,
-            country: 0,
-            type: 3
-          },
-          5:{
-            continent: 0,
-            country: 0,
-            type: 1
-          }
         }
       }
     }
-  }
+
   async nextPhase(){
     //Send Data...
     let troops = 0;
