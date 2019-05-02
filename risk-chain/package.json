@@ -8,7 +8,8 @@
     "react-scripts": "2.1.8",
     "react-svg-flexbox": "^1.0.0",
     "react-svg-loader": "^2.1.0",
-    "svg-url-loader": "^2.3.2"
+    "svg-url-loader": "^2.3.2",
+    "web3": "^1.0.0-beta.53"
   },
   "scripts": {
     "start": "react-scripts start",
