@@ -2,12 +2,9 @@
 ![Risk Logo](images/RISKLogo.png "RISK Logo")
 Authors
 ------
-### Luke Burford
-[![LinkedIN](images/linkedin.png)](https://www.linkedin.com/in/luke-burford-067073108)
-### Sean Thunquest
-[![LinkedIN](images/linkedin.png)](https://www.linkedin.com/in/sean-thunquest/)
-### David Wells
-[![LinkedIN](images/linkedin.png)](https://www.linkedin.com/in/davidwellsdeveloper/)
+### Luke Burford [![LinkedIN](images/linkedin.png)](https://www.linkedin.com/in/luke-burford-067073108)
+### Sean Thunquest [![LinkedIN](images/linkedin.png)](https://www.linkedin.com/in/sean-thunquest/)
+### David Wells [![LinkedIN](images/linkedin.png)](https://www.linkedin.com/in/davidwellsdeveloper/)
 
 Project Description
 -----
