@@ -415,7 +415,7 @@ contract RISK {
             boardState = string(abi.encodePacked(boardState,'"',uintToString(cont),'":{'));
             for(uint reg = 0; reg < currRegions.length; ++reg) {
                 Region currReg = Regions[currRegions[reg]];
-                boardState = string(abi.encodePacked(boardState,uintToString(reg),":{",'"owner":"', addressToString(currReg.owner), '",', '"troops":"', uintToString(currReg.numArmies),'"'));
+                boardState = string(abi.encodePacked(boardState,’”’,uintToString(reg),’”:{‘,'"owner":"', addressToString(currReg.owner), '",', '"troops":"', uintToString(currReg.numArmies),'"'));
                 if(reg+1 < currRegions.length)
                     boardState = string(abi.encodePacked(boardState,"},"));
                 else
