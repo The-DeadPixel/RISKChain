@@ -27,20 +27,43 @@ class Preview extends Component {
 	    }
 
     chooseCountryForPreview(name, path) {
+        console.log(this.state.type, name);
         this.setState({ name: name, path:  document.getElementById(name).getAttribute('d').replace(/\bM[A-Za-z0-9]*/g, "M100 ")})
     }
 
 
     render() {
         //this.state.register(this.chooseCountryForPreview);
-
+        let CountryOffsetY = "150c";
+        let n = this.state.name;
+        switch (n) {
+            case 'Argentina': {CountryOffsetY = "50c";
+                break;
+            }
+            case 'Greenland': {CountryOffsetY = "175c";
+                break;
+        }
+            case 'Ukraine': {CountryOffsetY = "225c";
+                break;
+            }
+            case 'Siberia': {CountryOffsetY = "225c";
+                break;
+            }
+            case 'South Africa': {CountryOffsetY = "25c";
+                break;
+            }
+            case 'North Africa': {CountryOffsetY = "225c";
+                break;
+            }
+            default: CountryOffsetY = "150c";
+        }
         //Preview.normalizeCountry(this.state.path);
 
         return (
             <div>
                 <svg xmlns="http://www.w3.org/2000/svg"
                      layout-css="margin: 20em;" height="250" >
-                <path className='outline' id="hilite" fill="green" strokeWidth="8" stroke="black" opacity="1" d={(this.state.path).replace(/\b[a-zA-Z,0-9]*c/g, "150c") } />
+                <path className='outline' id="hilite" fill="green" strokeWidth="8" stroke="black" opacity="1" d={(this.state.path).replace(/\b[a-zA-Z,0-9]*c/g, CountryOffsetY) } />
 
 
                 </svg>

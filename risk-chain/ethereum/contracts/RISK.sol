@@ -38,9 +38,6 @@ contract RISK {
     uint[] numRegions = [6,12,4,7,9,4];
     uint[] atckDie;
     uint[] defDie; // for storing dice roll values
-
-
-// ["0xca35b7d915458ef540ade6068dfe2f44e8fa733c", "0x14723a09acff6d2a60dcdf7aa4aff308fddc160c"],"123"
     /*
     * Constructor: setup string is a JSON that will populate the players and map owners
     * precondition: if names is defined, players and names MUST be the same length
